@@ -3,6 +3,7 @@ import { Server } from "http";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import asyncHandler from "./middleware/asyncHandler";
+import db from "./db/connectDb";
 
 const app: Express = express();
 const HOST = "localhost";
@@ -20,11 +21,17 @@ app.use(express.urlencoded({ extended: true }));
  */
 app.get(
   "/",
-  asyncHandler(async (_, response) =>
-    response.json({
-      info: "Testing course matrix backend server",
-    }),
-  ),
+  asyncHandler(async (_, res) => {
+    try {
+      const result = await db.query('SELECT * FROM testtbl');
+      // const client = await db.getClient();
+      res.json(result.rows);
+      // res.json(client)
+    } catch (error) {
+      console.error('Query error:', error);
+      res.status(500).json({ error: 'Failed to fetch test data' });
+    }
+  }),
 );
 
 server = app.listen(PORT, () => {
