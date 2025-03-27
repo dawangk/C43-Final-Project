@@ -14,23 +14,16 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-<<<<<<< HEAD
     "express": "^4.21.2",
     "google-auth-library": "^9.15.1",
     "pg": "^8.14.1"
-=======
-    "express": "^4.21.2"
->>>>>>> d27e866d7872c6c14c0ecc2d805c75a2f9a753f4
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/node": "^22.13.13",
-<<<<<<< HEAD
     "@types/pg": "^8.11.11",
-=======
->>>>>>> d27e866d7872c6c14c0ecc2d805c75a2f9a753f4
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
