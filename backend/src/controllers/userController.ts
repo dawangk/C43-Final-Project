@@ -1,68 +1,73 @@
-import asyncHandler from "../middleware/asyncHandler";
-import { Request, Response } from "express";
-import { UserService } from "../services/userService";
+import {CookieOptions, Request, Response} from 'express';
+
+import asyncHandler from '../middleware/asyncHandler';
+import {UserService} from '../services/userService';
 
 const userService = new UserService();
 
+const COOKIE_OPTIONS: CookieOptions = {
+  httpOnly: true,  // Prevents JavaScript access (XSS protection)
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+};
+
 export const signUp = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { username, email, password } = req.body;
-    const { data, error } = await userService.signUp(username, email, password);
+    const {username, email, password} = req.body;
+    const {data, error} = await userService.signUp(username, email, password);
 
     if (error) {
-      res.status(error.status).json({ message: error.message });
+      res.status(error.status).json({message: error.message});
       return;
     }
 
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({message: 'Internal Server Error'});
   }
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-    const { data, error }  = await userService.login(email, password);
+    const {email, password} = req.body;
+    const {data, error} = await userService.login(email, password);
 
     if (error) {
-      res.status(error.status).json({ message: error.message });
+      res.status(error.status).json({message: error.message});
       return;
     }
-
+    res.cookie('token', data.token, COOKIE_OPTIONS);
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({message: 'Internal Server Error'});
   }
 });
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { data, error } = await userService.logout();
+    // Clear token from cookies if it exists
+    res.clearCookie('token');
 
-    if (error) {
-      res.status(error.status).json({ message: error.message });
-      return;
-    }
-
-    res.status(200).json(data);
+    // Handle case when no token is present
+    return res.status(200).json(
+        {message: 'Logged out successfully or no active session.'});
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({message: 'Internal Server Error'});
   }
 });
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { data, error }  = await userService.me();
+    const {data, error} = await userService.me(req);
 
     if (error) {
-      res.status(error.status).json({ message: error.message });
+      res.status(error.status).json({message: error.message});
       return;
     }
 
     res.status(200).json(data);
   } catch (error: any) {
-    console.error("Session Error:", error);
-    res.status(500).json({ error: error.message });
+    console.error('Session Error:', error);
+    res.status(500).json({error: error.message});
   }
 });
