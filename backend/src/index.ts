@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import asyncHandler from "./middleware/asyncHandler";
 import db from "./db/connectDb";
+import { authRouter } from "./routes/userRoutes";
 
 const app: Express = express();
 const HOST = "localhost";
@@ -14,6 +15,7 @@ app.use(cors({ origin: process.env.CLIENT_APP_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+app.use("/auth", authRouter);
 
 /**
  * Root route to test the backend server.
