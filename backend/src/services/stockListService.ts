@@ -39,7 +39,15 @@ export class StockListService {
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'stockList not found'}};
       }
-      return {data: result.rows[0]};
+      const stocks = await db.query(
+          `SELECT * 
+        FROM Stock
+        WHERE sl_id = $1`,
+          [sl_id]);
+
+      return {
+        data: {info: result.rows[0], count: stocks.rowCount, list: stocks.rows}
+      };
     } catch (error: any) {
       return {
         error: {status: 500, message: error.message || 'internal server error'}
@@ -79,6 +87,80 @@ export class StockListService {
       }
 
       return {data: {message: 'Update successful!', content: result.rows[0]}};
+
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  /**
+   * Inserts {symbol, amount} into stockList with sl_id, if it exists, simply
+   * overrides the value
+   */
+  async updateStockEntry(
+      user_id: number, sl_id: number, symbol: string,
+      amount: number): Promise<ResponseType> {
+    try {
+      if (!user_id || !sl_id || !symbol || !amount) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const {data, error} = await this.getStockListById(user_id, sl_id);
+
+      if (error) {
+        return {
+          error: {status: 404, message: 'stockList not found'}
+        }
+      }
+
+      const result = await db.query(
+          `INSERT INTO Stock (sl_id, symbol, amount) 
+          VALUES ($1, $2, $3) 
+          ON CONFLICT (sl_id, symbol) 
+          DO UPDATE SET amount = EXCLUDED.amount 
+          RETURNING sl_id, symbol, amount`,
+          [sl_id, symbol, amount]);
+
+      return {
+        data: {message: 'Insert/Update success!', content: result.rows[0]}
+      };
+
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async deleteStockEntry(user_id: number, sl_id: number, symbol: string):
+      Promise<ResponseType> {
+    try {
+      if (!user_id || !sl_id || !symbol) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const {data, error} = await this.getStockListById(user_id, sl_id);
+
+      if (error) {
+        return {
+          error: {status: 404, message: 'stockList not found'}
+        }
+      }
+
+      const result = await db.query(
+          `DELETE FROM Stock WHERE sl_id = $1 AND symbol = $2 RETURNING sl_id, symbol`,
+          [sl_id, symbol]);
+
+      if (result.rowCount == 0) {
+        return {
+          error: {
+            status: 404,
+            message:
+                'symbol ' + symbol + ' not found for stockList of id ' + sl_id
+          }
+        };
+      }
+      return {data: {message: 'Delete successful!', content: result.rows[0]}};
 
     } catch (error: any) {
       return {

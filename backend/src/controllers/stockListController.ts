@@ -81,10 +81,34 @@ export const deleteStockList =
       try {
         const id = Number(req.params.id);
         const user_id = (req as any).user.user_id;
+        const {symbol} = req.body;
 
-        const {data, error} =
-            await stockListService.deleteStockList(user_id, id);
+        let data, error;
 
+        if (symbol) {
+          ({data, error} =
+               await stockListService.deleteStockEntry(user_id, id, symbol));
+        } else {
+          ({data, error} = await stockListService.deleteStockList(user_id, id));
+        }
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error'});
+      }
+    });
+
+export const updateStockEntry =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const id = Number(req.params.id);
+        const user_id = (req as any).user.user_id;
+        const {symbol, amount} = req.body;
+        const {data, error} = await stockListService.updateStockEntry(
+            user_id, id, symbol, amount);
         if (error) {
           res.status(error.status).json({message: error.message});
           return;
