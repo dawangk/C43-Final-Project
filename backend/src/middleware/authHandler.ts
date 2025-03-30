@@ -21,8 +21,8 @@ interface AuthenticatedRequest extends Request {
 
 export const authHandler = asyncHandler(
     async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-      // Check refresh token in cookies to determine if authorized
-      const access_token = req.cookies.access_token;
+      // Check access token in cookies to determine if authorized
+      const access_token = req.cookies.token;
 
       if (!access_token) {
         return res.status(401).json({message: 'No access token found'});
@@ -30,16 +30,19 @@ export const authHandler = asyncHandler(
 
       try {
         // Verify the session
-        // const { data, error } = await userService.me();
+        if (!access_token) {
+          res.clearCookie("token");
+          return res.status(401).json({ message: "Invalid or expired session"});
+        }
 
-        // if (error) {
-        //   res.clearCookie("access_token");
-        //   return res.status(401).json({ message: "Invalid or expired session"
-        //   });
-        // }
+        const { data, error } = await userService.me(access_token);
 
-        // // Attach user to request for route handlers to access later
-        // req.user = data?.user ?? undefined;
+        if (error) {
+          return res.status(404).json({ message: "Could not get user"});
+        }
+
+        // Attach user to request for route handlers to access later
+        req.user = data;
 
         next();
       } catch (error) {

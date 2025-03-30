@@ -70,19 +70,8 @@ export class UserService {
   }
 
 
-  async me(req: any): Promise<ResponseType> {
+  async me(token: string): Promise<ResponseType> {
     try {
-      // Get the token from the request (either from Authorization header or
-      // cookies)
-      const token =
-          req.cookies.token || req.headers.authorization?.split(' ')[1];
-
-      if (!token) {
-        return {
-          error: {status: 401, message: 'Unauthorized. No token provided.'}
-        };
-      }
-
       // Verify the token
       const decoded =
           jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
