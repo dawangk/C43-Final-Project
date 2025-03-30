@@ -1,3 +1,4 @@
+
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, {Express} from 'express';
@@ -49,6 +50,7 @@ const exitHandler = () => {
   if (server) {
     server.close(() => {
       console.info('Server closed');
+
       process.exit(1);
     });
   } else {
@@ -61,8 +63,10 @@ const unexpectedErrorHandler = (error: unknown) => {
   exitHandler();
 };
 
+
 process.on('uncaughtException', unexpectedErrorHandler);
 process.on('unhandledRejection', unexpectedErrorHandler);
 
 export {server};
+
 export default app;
