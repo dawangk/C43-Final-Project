@@ -1,13 +1,29 @@
-import { useState } from 'react'
 import './App.css'
+import { Toaster } from "./components/ui/toaster";
+import { Route } from 'react-router-dom';
+import { Routes } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
+import { Dashboard } from './pages/Dashboard/Dashboard';
+import { Login } from './pages/Login/Login';
+import LoginRoute from './components/login-route';
+import AuthRoute from './components/auth-route';
 
 function App() {
-
   return (
-    <>
-      <div className="text-blue-500 text-[1000px]"> Hello</div>
-    </>
-  )
+    <div className="w-full">
+      <Routes>
+        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<LoginRoute component={Login} />} />
+        <Route path="/signup" element={<></>} />
+        <Route
+          path="/dashboard/*"
+          element={<AuthRoute component={Dashboard} />}
+        />
+      </Routes>
+      <Toaster />
+    </div>
+  );
 }
 
-export default App
+export default App;
