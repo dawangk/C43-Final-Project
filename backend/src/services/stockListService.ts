@@ -48,6 +48,7 @@ export class StockListService {
       return {
         data: {info: result.rows[0], count: stocks.rowCount, list: stocks.rows}
       };
+
     } catch (error: any) {
       return {
         error: {status: 500, message: error.message || 'internal server error'}
@@ -94,6 +95,7 @@ export class StockListService {
       };
     }
   }
+
 
   /**
    * Inserts {symbol, amount} into stockList with sl_id, if it exists, simply

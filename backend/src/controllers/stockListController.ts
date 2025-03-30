@@ -109,6 +109,7 @@ export const updateStockEntry =
         const {symbol, amount} = req.body;
         const {data, error} = await stockListService.updateStockEntry(
             user_id, id, symbol, amount);
+
         if (error) {
           res.status(error.status).json({message: error.message});
           return;
@@ -117,4 +118,6 @@ export const updateStockEntry =
       } catch (error) {
         res.status(500).json({message: 'Internal Server Error'});
       }
+
     });
+
