@@ -64,9 +64,10 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
         req.cookies.token || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      return {
-        error: {status: 401, message: 'Unauthorized. No token provided.'}
-      };
+      res.status(401).json({
+        message: 'Unauthorized. No token provided.'
+      });
+      return;
     }
 
     const {data, error} = await userService.me(token);
