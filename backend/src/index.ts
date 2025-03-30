@@ -1,39 +1,43 @@
-import express, { Express } from "express";
-import { Server } from "http";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import asyncHandler from "./middleware/asyncHandler";
-import db from "./db/connectDb";
-import { authRouter } from "./routes/userRoutes";
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import express, {Express} from 'express';
+import {Server} from 'http';
+
+import db from './db/connectDb';
+import asyncHandler from './middleware/asyncHandler';
+import {stockListRouter} from './routes/stockListRoutes';
+import {authRouter} from './routes/userRoutes';
 
 const app: Express = express();
-const HOST = "localhost";
+const HOST = 'localhost';
 const PORT = process.env.PORT || 8081;
 let server: Server;
 
-app.use(cors({ origin: process.env.CLIENT_APP_URL, credentials: true }));
+app.use(cors({origin: process.env.CLIENT_APP_URL, credentials: true}));
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
-app.use("/auth", authRouter);
+app.use(express.urlencoded({extended: true}));
+
+app.use('/api/stocklist', stockListRouter);
+app.use('/auth', authRouter);
 
 /**
  * Root route to test the backend server.
  * @route GET /
  */
 app.get(
-  "/",
-  asyncHandler(async (_, res) => {
-    try {
-      const result = await db.query('SELECT * FROM testtbl');
-      // const client = await db.getClient();
-      res.json(result.rows);
-      // res.json(client)
-    } catch (error) {
-      console.error('Query error:', error);
-      res.status(500).json({ error: 'Failed to fetch test data' });
-    }
-  }),
+    '/',
+    asyncHandler(async (_, res) => {
+      try {
+        const result = await db.query('SELECT * FROM testtbl');
+        // const client = await db.getClient();
+        res.json(result.rows);
+        // res.json(client)
+      } catch (error) {
+        console.error('Query error:', error);
+        res.status(500).json({error: 'Failed to fetch test data'});
+      }
+    }),
 );
 
 server = app.listen(PORT, () => {
@@ -44,7 +48,7 @@ server = app.listen(PORT, () => {
 const exitHandler = () => {
   if (server) {
     server.close(() => {
-      console.info("Server closed");
+      console.info('Server closed');
       process.exit(1);
     });
   } else {
@@ -57,8 +61,8 @@ const unexpectedErrorHandler = (error: unknown) => {
   exitHandler();
 };
 
-process.on("uncaughtException", unexpectedErrorHandler);
-process.on("unhandledRejection", unexpectedErrorHandler);
+process.on('uncaughtException', unexpectedErrorHandler);
+process.on('unhandledRejection', unexpectedErrorHandler);
 
-export { server };
+export {server};
 export default app;

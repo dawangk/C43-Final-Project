@@ -103,6 +103,7 @@ export class UserService {
       const user = result.rows[0];
       return {
         data: {
+          user_id: userId,
           username: user.username,
           email: user.email,
           created_at: user.created_at
