@@ -16,7 +16,7 @@ export const createStockList =
       try {
         const {name} = req.body;
 
-        const user_id = (req as any).user;
+        const user_id = (req as any).user.user_id;
         const {data, error} =
             await stockListService.createStockList(user_id, name);
 
@@ -35,7 +35,7 @@ export const getStockLists =
     asyncHandler(async (req: Request, res: Response) => {
       try {
         const id = Number(req.params.id);
-        const user_id = (req as any).user;
+        const user_id = (req as any).user.user_id;
         let data, error;
         console.log(id);
         if (id) {
@@ -59,7 +59,7 @@ export const updateStockList =
     asyncHandler(async (req: Request, res: Response) => {
       try {
         const id = Number(req.params.id);
-        const user_id = (req as any).user;
+        const user_id = (req as any).user.user_id;
         const {name} = req.body;
 
         const {data, error} =
@@ -80,7 +80,7 @@ export const deleteStockList =
     asyncHandler(async (req: Request, res: Response) => {
       try {
         const id = Number(req.params.id);
-        const user_id = (req as any).user;
+        const user_id = (req as any).user.user_id;
 
         const {data, error} =
             await stockListService.deleteStockList(user_id, id);
