@@ -23,6 +23,14 @@ const useAuthStore = create<AuthState>()(
       storage: {
         getItem: (name) => {
           const userInfoStr = localStorage.getItem('userInfo');
+          const expirationTime = localStorage.getItem('expirationTime');
+          
+          if (expirationTime && new Date().getTime() > parseInt(expirationTime)) {
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('expirationTime');
+            return { state: { userInfo: null }, version: 0 };
+          }
+          
           return {
             state: {
               userInfo: userInfoStr ? JSON.parse(userInfoStr) : null
@@ -40,7 +48,8 @@ const useAuthStore = create<AuthState>()(
         },
         
         removeItem: (name) => {
-          localStorage.clear();
+          localStorage.removeItem('userInfo');
+          localStorage.removeItem('expirationTime');
         }
       }
     }

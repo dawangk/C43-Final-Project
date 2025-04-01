@@ -18,16 +18,18 @@ export function UserMenu() {
   const logoutMutation = useMutation({
     mutationFn: logout
   })
-  const authStore = useAuthStore();
+  const clearCredentials = useAuthStore(state => state.clearCredentials);
 
-  const user_metadata = JSON.parse(localStorage.getItem("userInfo") ?? "{}"); //User Data
+  const data = JSON.parse(localStorage.getItem("userInfo") ?? "{}"); //User Data
   const username =
-    (user_metadata?.username as string) ?? "John Doe";
+    data ? (data?.username as string) : "John Doe";
+  const email =
+    data ? (data?.email as string) : "someone@gmail.com";
 
   const handleLogout = async () => {
     try {
       logoutMutation.mutate();
-      authStore.clearCredentials();
+      clearCredentials();
       navigate("/login");
     } catch (err) {
       console.error("Logout failed:", err);
@@ -43,7 +45,7 @@ export function UserMenu() {
             {/* Avatar Image is the profile picture of the user. The default avatar is used as a placeholder for now. */}
             <AvatarImage src="/img/grey-avatar.png" className="h-18 w-18" />
             {/* Avatar Fallback is the initials of the user. Avatar Fallback will be used if Avatar Image fails to load */}
-            <AvatarFallback>{"JD"}</AvatarFallback>
+            <AvatarFallback>{username.split(" ").map((word) => word[0].toLocaleUpperCase()).join("")}</AvatarFallback>
           </Avatar>
         </div>
       </DropdownMenuTrigger>
@@ -51,7 +53,7 @@ export function UserMenu() {
         <div className="p-4 flex gap-4 items-center">
           <Mail size={16} />
           <p className="text-sm font-medium">
-            {user_metadata?.user?.user_metadata?.email}
+            {email}
           </p>
         </div>
         <DropdownMenuItem>

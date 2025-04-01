@@ -32,9 +32,10 @@ export function SignupForm({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCheckEmail, setShowCheckEmail] = useState(false);
   const [showUserExists, setShowUserExists] = useState(false);
   const [showSignupError, setShowSignupError] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const signupMutation = useMutation({
     mutationFn: signup
   })
@@ -42,22 +43,27 @@ export function SignupForm({
   const onSubmit = async (values: z.infer<typeof SignupFormSchema>) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-    setShowCheckEmail(false);
     setShowUserExists(false);
     setShowSignupError(false);
+    setShowSuccess(false);
     try {
-      signupMutation.mutate(signupForm.getValues());
+      signupMutation.mutate({
+        username: values.username,
+        email: values.email,
+        password: values.password
+      });
       const data = signupMutation.data;
       const error = signupMutation.error;
       console.log("Signup", data, error);
+      
       if (error) {
-        if ((error as any)?.data?.error?.message === "User already exists") {
+        if ((error as any)?.message.endsWith("Username or email already in use.")) {
           setShowUserExists(true);
         } else {
           setShowSignupError(true);
         }
       } else {
-        setShowCheckEmail(true);
+        setShowSuccess(true);
       }
     } catch (err) {
       setShowSignupError(true);
@@ -87,7 +93,7 @@ export function SignupForm({
                     control={signupForm.control}
                     name="username"
                     render={({ field }) => (
-                      <FormItem className="text-left w-[400px]">
+                      <FormItem className="text-left">
                         <FormLabel>Username</FormLabel>
                         <FormControl>
                           <Input {...field} id="UsernameInput" />
@@ -100,7 +106,7 @@ export function SignupForm({
                     control={signupForm.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem className="text-left w-[400px]">
+                      <FormItem className="text-left">
                         <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
@@ -127,20 +133,18 @@ export function SignupForm({
                     placeholder="Confirm password"
                     className="w-full"
                   />
-                  {showCheckEmail && (
-                    <p className="text-sm text-slate-500 w-[400px]">
-                      Registration successful! Please check{" "}
-                      {signupForm.getValues("email")} for a confirmation link
+                  {showSuccess  && (
+                    <p className="text-sm text-green-700">
+                      Your account for {signupForm.getValues("email")} has been made successfully. Please login.
                     </p>
                   )}
                   {showUserExists && (
-                    <p className="text-sm text-red-500 w-[400px]">
-                      User with email {signupForm.getValues("email")} already
-                      exists!
+                    <p className="text-sm text-red-500">
+                      Username or email already in use. 
                     </p>
                   )}
                   {showSignupError && (
-                    <p className="text-sm text-red-500 w-[400px]">
+                    <p className="text-sm text-red-500">
                       An unknown error occured. Please try again.
                     </p>
                   )}
@@ -152,7 +156,7 @@ export function SignupForm({
                       variant={isSubmitting ? "ghost" : "default"}
                       type="submit"
                     >
-                      Login
+                      Sign Up
                     </Button>
                   </div>
                 </form>
@@ -168,7 +172,7 @@ export function SignupForm({
           </div>
           <div className="relative hidden bg-muted md:block">
             <img
-              src="/placeholder.svg"
+              src="/img/cover-2.jpg"
               alt="Image"
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />
