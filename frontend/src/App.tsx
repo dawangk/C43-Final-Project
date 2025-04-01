@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard/Dashboard';
 import { Login } from './pages/Login/Login';
 import LoginRoute from './components/login-route';
 import AuthRoute from './components/auth-route';
+import { Signup } from './pages/Signup/Signup';
 
 function App() {
   return (
@@ -15,7 +16,7 @@ function App() {
         <Route path="*" element={<Navigate to="/login" />} />
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<LoginRoute component={Login} />} />
-        <Route path="/signup" element={<></>} />
+        <Route path="/signup" element={<Signup/>} />
         <Route
           path="/dashboard/*"
           element={<AuthRoute component={Dashboard} />}

@@ -1,8 +1,9 @@
 import { SERVER_URL } from "./config"
 
-export const signup = async () => {
+export const signup = async (data: any) => {
   const res = await fetch(`${SERVER_URL}/auth/signup`, {
     method: "POST",
+    body: data,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",
@@ -17,9 +18,10 @@ export const signup = async () => {
   return await res.json();
 }
 
-export const login = async () => {
+export const login = async (data: any) => {
   const res = await fetch(`${SERVER_URL}/auth/login`, {
     method: "POST",
+    body: data,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",
