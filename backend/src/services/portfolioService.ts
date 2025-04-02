@@ -10,7 +10,7 @@ import {StockListService} from './stockListService';
 const stockListService = new StockListService();
 
 function isMoneyNumberString(value: number): boolean {
-  return /^\d+(\.\d{1,2})?$/.test(value.toString());
+  return /^-?\d+(\.\d{1,2})?$/.test(value.toString());
 }
 
 
@@ -61,7 +61,10 @@ export class PortfolioService {
       Promise<ResponseType> {
     try {
       if (!user_id || !port_id || !amount) {
-        return {error: {status: 400, message: 'Name is required.'}};
+        console.log(user_id);
+        console.log(port_id);
+        console.log(amount);
+        return {error: {status: 400, message: 'Missing/Invalid parameters.'}};
       }
       if (!isMoneyNumberString(amount)) {
         return {error: {status: 400, message: 'Bad amount format.'}};
@@ -74,14 +77,16 @@ export class PortfolioService {
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'Portfolio not found'}};
       }
-
-      let new_amount = amount + result.rows[0].cash_account;
+      let cashNum =
+          parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''));
+      let new_amount = amount + cashNum;
       if (new_amount < 0) {
         return {error: {status: 400, message: 'Negative Balance Detected'}};
       }
 
       const insert_result = await db.query(
-          `UPDATE Portfolio SET cash_account = $1`, [new_amount]);
+          `UPDATE Portfolio SET cash_account = $1 RETURNING port_id, cash_account`,
+          [new_amount]);
 
       return {
         data: {message: 'Update successs!', result: insert_result.rows[0]}

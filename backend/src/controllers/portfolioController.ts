@@ -81,7 +81,6 @@ export const deletePortfolio =
       try {
         const id = Number(req.params.id);
         const user_id = (req as any).user.user_id;
-        const {symbol} = req.body;
 
         const {data, error} =
             await portfolioService.deletePortfolio(user_id, id);
@@ -95,3 +94,22 @@ export const deletePortfolio =
         res.status(500).json({message: 'Internal Server Error'});
       }
     });
+
+export const modifyFunds = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const user_id = (req as any).user.user_id;
+    const {amount} = req.body;
+
+    const {data, error} =
+        await portfolioService.modifyFunds(user_id, id, amount);
+
+    if (error) {
+      res.status(error.status).json({message: error.message});
+      return;
+    }
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({message: 'Internal Server Error'});
+  }
+});

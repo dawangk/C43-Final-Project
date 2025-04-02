@@ -1,6 +1,6 @@
 import express from 'express';
 
-import {createPortfolio, deletePortfolio, getPortfolios, updatePortfolio} from '../controllers/portfolioController';
+import {createPortfolio, deletePortfolio, getPortfolios, modifyFunds, updatePortfolio} from '../controllers/portfolioController';
 import {authHandler} from '../middleware/authHandler';
 
 export const portfolioRouter = express.Router();
@@ -11,5 +11,6 @@ portfolioRouter.get('/:id', authHandler, getPortfolios);
 portfolioRouter.get('/', authHandler, getPortfolios);
 
 portfolioRouter.put('/:id', authHandler, updatePortfolio);
+portfolioRouter.put('/addFund/:id', authHandler, modifyFunds);
 
 portfolioRouter.delete('/:id', authHandler, deletePortfolio);
