@@ -31,19 +31,13 @@ export class PortfolioService {
 
 
       let {data, error} = await stockListService.createStockList(user_id, name);
-      let port_name = name;
-      while (error) {
-        port_name += ' (1)';
-        ({data, error} =
-             await stockListService.createStockList(user_id, port_name));
+      if (error) {
+        return {error};
       }
       const result = await db.query(
           'INSERT INTO Portfolio (user_id, name, sl_id) VALUES ($1, $2, $3) RETURNING port_id',
           [user_id, name, data.sl_id]);
       const port_id = result.rows[0].port_id;
-
-      // might change later
-
 
       return {
         data:
@@ -61,9 +55,6 @@ export class PortfolioService {
       Promise<ResponseType> {
     try {
       if (!user_id || !port_id || !amount) {
-        console.log(user_id);
-        console.log(port_id);
-        console.log(amount);
         return {error: {status: 400, message: 'Missing/Invalid parameters.'}};
       }
       if (!isMoneyNumberString(amount)) {
