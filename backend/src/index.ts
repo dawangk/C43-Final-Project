@@ -6,6 +6,7 @@ import {Server} from 'http';
 
 import db from './db/connectDb';
 import asyncHandler from './middleware/asyncHandler';
+import {portfolioRouter} from './routes/portfolioRoutes';
 import {stockListRouter} from './routes/stockListRoutes';
 import {authRouter} from './routes/userRoutes';
 
@@ -20,7 +21,9 @@ app.use(cookieParser());
 app.use(express.urlencoded({extended: true}));
 
 app.use('/api/stocklist', stockListRouter);
+app.use('/api/portfolio', portfolioRouter)
 app.use('/auth', authRouter);
+
 
 /**
  * Root route to test the backend server.

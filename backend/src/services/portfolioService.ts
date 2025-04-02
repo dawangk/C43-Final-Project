@@ -1,9 +1,11 @@
 import bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
-import { StockListService } from './stockListService';
+
 import db from '../db/connectDb';
 import {ResponseType} from '../models/response';
+
+import {StockListService} from './stockListService';
 
 const stockListService = new StockListService();
 
@@ -18,22 +20,34 @@ export class PortfolioService {
       if (!user_id || !name) {
         return {error: {status: 400, message: 'Name is required.'}};
       }
-
-      const result = await db.query(
-          'INSERT INTO Portfolio (user_id, name) VALUES ($1, $2) RETURNING port_id',
+      const dup = await db.query(
+          'SELECT * FROM Portfolio WHERE user_id = $1 AND name = $2',
           [user_id, name]);
-      const port_id = result.rows[0].port_id;
-      
-      //might change later
-      let {data, error} = await stockListService.createStockList(user_id, name);
-      let port_name = name;
-      while(error){
-        name += " (1)";
-        ({data, error} = await stockListService.createStockList(user_id, port_name));
+      if (dup.rowCount != 0) {
+        return {
+          error: {status: 400, message: 'Portfolio title already exists'}
+        };
       }
 
+
+      let {data, error} = await stockListService.createStockList(user_id, name);
+      let port_name = name;
+      while (error) {
+        port_name += ' (1)';
+        ({data, error} =
+             await stockListService.createStockList(user_id, port_name));
+      }
+      const result = await db.query(
+          'INSERT INTO Portfolio (user_id, name, sl_id) VALUES ($1, $2, $3) RETURNING port_id',
+          [user_id, name, data.sl_id]);
+      const port_id = result.rows[0].port_id;
+
+      // might change later
+
+
       return {
-        data: {message: 'Portfolio created successfully', user_id, port_id, data}
+        data:
+            {message: 'Portfolio created successfully', user_id, port_id, data}
       }
 
     } catch (error: any) {
@@ -43,33 +57,35 @@ export class PortfolioService {
     }
   }
 
-  async modifyFunds(user_id: number, port_id: number, amount: number): Promise<ResponseType> {
+  async modifyFunds(user_id: number, port_id: number, amount: number):
+      Promise<ResponseType> {
     try {
       if (!user_id || !port_id || !amount) {
         return {error: {status: 400, message: 'Name is required.'}};
       }
-      if(!isMoneyNumberString(amount)){
+      if (!isMoneyNumberString(amount)) {
         return {error: {status: 400, message: 'Bad amount format.'}};
       }
 
       const result = await db.query(
           'SELECT cash_account FROM Portfolio WHERE user_id = $1 AND port_id = $2',
           [user_id, port_id]);
-      
-      if(result.rowCount==0){
-        return{error:{status: 404, message: "Portfolio not found"}};
+
+      if (result.rowCount == 0) {
+        return {error: {status: 404, message: 'Portfolio not found'}};
       }
 
       let new_amount = amount + result.rows[0].cash_account;
-      if(new_amount<0){
-        return{error:{status: 400, message: "Negative Balance Detected"}};
+      if (new_amount < 0) {
+        return {error: {status: 400, message: 'Negative Balance Detected'}};
       }
 
       const insert_result = await db.query(
-        `UPDATE Portfolio SET cash_account = $1`,
-        [new_amount]);
+          `UPDATE Portfolio SET cash_account = $1`, [new_amount]);
 
-      return {data:{message:"Update successs!", result: insert_result.rows[0]}}
+      return {
+        data: {message: 'Update successs!', result: insert_result.rows[0]}
+      }
     } catch (error: any) {
       return {
         error: {status: 500, message: error.message || 'internal server error'}
@@ -89,15 +105,12 @@ export class PortfolioService {
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'Portfolio not found'}};
       }
-      const stockList = await db.query(
-          `SELECT * 
-        FROM StockList
-        WHERE sl_id = $1`,
-          [result.rows[0].sl_id]);
+      console.log(result.rows[0].sl_id);
 
-      return {
-        data: {info: result.rows[0], stockList}
-      };
+      const stockList = await stockListService.getStockListById(
+          user_id, result.rows[0].sl_id);
+
+      return {data: {info: result.rows[0], stock_list: stockList}};
 
     } catch (error: any) {
       return {
@@ -123,7 +136,7 @@ export class PortfolioService {
       };
     }
   }
-  
+
   async updatePortfolio(user_id: number, port_id: number, name: string):
       Promise<ResponseType> {
     try {
@@ -146,7 +159,8 @@ export class PortfolioService {
     }
   }
 
-  async deletePortfolio(user_id: number, port_id: number): Promise<ResponseType> {
+  async deletePortfolio(user_id: number, port_id: number):
+      Promise<ResponseType> {
     try {
       if (!user_id || !port_id) {
         return {error: {status: 400, message: 'Missing parameters.'}};
@@ -156,12 +170,15 @@ export class PortfolioService {
           [port_id, user_id]);
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'no portfolio found for user'}};
-      } 
-      const {data, error} = await stockListService.deleteStockList(user_id, result.rows[0].sl_id);
-      if(error){
+      }
+      const {data, error} =
+          await stockListService.deleteStockList(user_id, result.rows[0].sl_id);
+      if (error) {
         return {error};
       }
-      return {data: {message: 'Delete successful!', content: result.rows[0], data}};
+      return {
+        data: {message: 'Delete successful!', content: result.rows[0], data}
+      };
     } catch (error: any) {
       return {
         error: {status: 500, message: error.message || 'internal server error'}
