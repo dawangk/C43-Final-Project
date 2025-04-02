@@ -1,6 +1,6 @@
 CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT NOW() 
@@ -42,13 +42,11 @@ CREATE TABLE Portfolio(
 CREATE TABLE StockList(
 	sl_id SERIAL PRIMARY KEY, 
 	user_id INT NOT NULL, 
-	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
+	name TEXT NOT NULL,
+	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')) DEFAULT 'private',
     created_at TIMESTAMP DEFAULT NOW(), 
-	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
+	CONSTRAINT unique_name UNIQUE(user_id, name)
 );
-	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
-    created_at TIMESTAMP DEFAULT NOW()
-)
 
 CREATE TABLE Stock(
 	sl_id INT NOT NULL, 
@@ -58,23 +56,6 @@ CREATE TABLE Stock(
     updated_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
-
-
-CREATE TABLE CreatorOfP(
-	user_id INT NOT NULL, 
-	port_id INT NOT NULL, 
-	PRIMARY KEY (user_id, port_id), 
-	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-	FOREIGN KEY (port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE
-)
-
-CREATE TABLE CreatorOfSL(
-	user_id INT NOT NULL, 
-	sl_id INT NOT NULL, 
-	PRIMARY KEY (user_id, sl_id), 
-	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-	FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
-)
 
 CREATE TABLE UserReview(
 	user_id INT NOT NULL, 
@@ -92,14 +73,6 @@ CREATE TABLE Share(
     FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
 );
-
-
-CREATE TABLE SLOfP(
-    port_id INT NOT NULL, 
-    sl_id INT NOT NULL,
-    FOREIGN KEY (port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE, 
-    FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
-)
 
 CREATE TABLE RecordedStockPerformance (
     port_id INT NOT NULL, 
