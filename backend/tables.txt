@@ -46,11 +46,8 @@ CREATE TABLE StockList(
     created_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
-	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
-    created_at TIMESTAMP DEFAULT NOW()
-)
 
-CREATE TABLE Stock(
+CREATE TABLE StockOwned(
 	sl_id INT NOT NULL, 
 	symbol VARCHAR(5) NOT NULL, 
 	amount INT CHECK (amount > 0), 
@@ -59,6 +56,9 @@ CREATE TABLE Stock(
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
 
+CREATE TABLE Stock(
+  symbol VARCHAR(5) PRIMARY KEY
+);
 
 CREATE TABLE CreatorOfP(
 	user_id INT NOT NULL, 
@@ -66,7 +66,7 @@ CREATE TABLE CreatorOfP(
 	PRIMARY KEY (user_id, port_id), 
 	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
 	FOREIGN KEY (port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE CreatorOfSL(
 	user_id INT NOT NULL, 
@@ -74,7 +74,7 @@ CREATE TABLE CreatorOfSL(
 	PRIMARY KEY (user_id, sl_id), 
 	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
 	FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE UserReview(
 	user_id INT NOT NULL, 
@@ -99,7 +99,7 @@ CREATE TABLE SLOfP(
     sl_id INT NOT NULL,
     FOREIGN KEY (port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE, 
     FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE RecordedStockPerformance (
     port_id INT NOT NULL, 
