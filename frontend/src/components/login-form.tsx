@@ -87,7 +87,7 @@ export function LoginForm({
                     control={loginForm.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem className="text-left w-[400px]">
+                      <FormItem className="text-left">
                         <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
