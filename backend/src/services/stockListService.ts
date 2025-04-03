@@ -18,7 +18,7 @@ export class StockListService {
       const sl_id = result.rows[0].sl_id;
 
       return {
-        data: {message: 'Stock List created successfully', user_id, sl_id}
+        data: {message: 'Stock List created successfully', user_id, sl_id, name}
       };
     } catch (error: any) {
       return {
