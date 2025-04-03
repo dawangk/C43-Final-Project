@@ -27,6 +27,14 @@ CREATE TABLE Friendship(
 	CHECK (user1_id < user2_id)
 );
 
+CREATE TABLE StockList(
+	sl_id SERIAL PRIMARY KEY, 
+	user_id INT NOT NULL, 
+	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
+    created_at TIMESTAMP DEFAULT NOW(), 
+	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
+);
+
 CREATE TABLE Portfolio(
 	user_id INT NOT NULL, 
 	sl_id INT NOT NULL,
@@ -34,16 +42,6 @@ CREATE TABLE Portfolio(
 	cash_account MONEY NOT NULL, 
 	created_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
-);
-
-
-
-CREATE TABLE StockList(
-	sl_id SERIAL PRIMARY KEY, 
-	user_id INT NOT NULL, 
-	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
-    created_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
 
@@ -125,3 +123,6 @@ CREATE TABLE HistoricalStockPerformance (
     PRIMARY KEY (symbol, timestamp)
 );
 
+INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;
+
+COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM '/data/SP500History.csv' DELIMITER ',' CSV HEADER;
