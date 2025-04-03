@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react"
 import { StockListTable } from "./StockListTable";
 import { Spinner } from "@/components/ui/spinner";
+import { useToast } from "@/hooks/use-toast";
 
 export const StockListPage = () => {
 
@@ -32,6 +33,7 @@ export const StockListPage = () => {
     queryKey: ["stock-lists"],
     queryFn: getStockLists
   })
+  const {toast} = useToast();
 
   const handleCreate = async () => {
     try {
@@ -41,6 +43,12 @@ export const StockListPage = () => {
       console.log("Create stock list", data);
     } catch (error: any) {
       console.error(error);
+      if (error.message.startsWith("duplicate"))
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Cannot create stock list with same name."
+      })
     }
   }
 

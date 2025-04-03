@@ -1,4 +1,4 @@
-import { StockList } from "@/models/db-models"
+import { Stock, StockList, StockOwned } from "@/models/db-models"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
  
@@ -60,5 +60,16 @@ export const columns: ColumnDef<StockList>[] = [
         </div>
       )
     },
+  },
+]
+
+export const viewStockListColumns : ColumnDef<StockOwned>[] = [
+  {
+    accessorKey: "symbol",
+    header: "Ticker",
+  },
+  {
+    accessorKey: "price",
+    header: "Today's price",
   },
 ]
