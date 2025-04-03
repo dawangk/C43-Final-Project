@@ -15,4 +15,5 @@ stockListRouter.get('/:id', authHandler, getStockLists);
 
 stockListRouter.put('/:id', authHandler, updateStockList);
 
+/* If provide symbol in body then deletes an entry. Otherwise deletes entire list.*/
 stockListRouter.delete('/:id', authHandler, deleteStockList);

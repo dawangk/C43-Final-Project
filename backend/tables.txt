@@ -30,9 +30,11 @@ CREATE TABLE Friendship(
 CREATE TABLE StockList(
 	sl_id SERIAL PRIMARY KEY, 
 	user_id INT NOT NULL, 
+	name TEXT NOT NULL, 
 	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
     created_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
+	CONSTRAINT unique_stock_list_name UNIQUE(user_id, name)
 );
 
 CREATE TABLE Portfolio(
