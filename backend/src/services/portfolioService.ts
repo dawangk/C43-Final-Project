@@ -122,9 +122,6 @@ export class PortfolioService {
       }
       const result = await db.query(
           'SELECT * FROM Portfolio WHERE user_id = $1', [user_id]);
-      if (result.rowCount == 0) {
-        return {error: {status: 404, message: 'no portfolios found for user'}};
-      }
       return {data: result.rows};
     } catch (error: any) {
       return {

@@ -41,7 +41,7 @@ export class StockListService {
       }
       const stocks = await db.query(
           `SELECT * 
-        FROM Stock
+        FROM StockOwned
         WHERE sl_id = $1`,
           [sl_id]);
 
@@ -63,9 +63,6 @@ export class StockListService {
       }
       const result = await db.query(
           'SELECT * FROM StockList WHERE user_id = $1', [user_id]);
-      if (result.rowCount == 0) {
-        return {error: {status: 404, message: 'no stockLists found for user'}};
-      }
       return {data: result.rows};
     } catch (error: any) {
       return {
