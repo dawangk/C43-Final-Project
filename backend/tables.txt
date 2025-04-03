@@ -1,6 +1,6 @@
 CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT NOW() 
@@ -39,10 +39,12 @@ CREATE TABLE Portfolio(
 	user_id INT NOT NULL, 
 	sl_id INT NOT NULL,
 	port_id SERIAL PRIMARY KEY, 
-	cash_account MONEY NOT NULL, 
+	cash_account MONEY NOT NULL DEFAULT 0, 
+	name TEXT NOT NULL, 
 	created_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
+	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE, 
+	CONSTRAINT unique_port_name UNIQUE(user_id, name)
 );
 
 CREATE TABLE StockOwned(
