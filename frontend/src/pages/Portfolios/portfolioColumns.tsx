@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
-import { deletePortfolio, updatePortfolio } from "@/api/portfolioApiSlice";
+import { deletePortfolio, modifyFunds, updatePortfolio } from "@/api/portfolioApiSlice";
 import { Input } from "@/components/ui/input";
 import { deleteStockList, updateStockEntry } from "@/api/stockListApiSlice";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -55,6 +55,9 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
       const [open, setOpen] = useState(false)
       const [openRename, setOpenRename] = useState(false)
       const [newName, setNewName] = useState("")
+      const [cash, setCash] = useState(0)
+      const [fundAction, setFundAction] = useState("deposit")
+      const [fundOpen, setFundOpen] = useState(false);
       
       const deletePortfolioMutation = useMutation({
         mutationFn: deletePortfolio,
@@ -68,6 +71,13 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
           queryClient.invalidateQueries({ queryKey: ['portfolios'] })
         },
       })
+      const modifyFundsMutation = useMutation({
+        mutationFn: modifyFunds,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['portfolios'] })
+        },
+      })
+
 
       const handleDelete = async () => {
         try {
@@ -98,6 +108,30 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
           console.error(error);
         }
       }
+
+      const handleModifyFunds = async () => {
+        try {
+          const data = await modifyFundsMutation.mutateAsync({
+            body: {
+              amount: (fundAction === "deposit" ? cash : -cash).toFixed(2)
+            }, 
+            id: portfolio.port_id
+          });
+          console.log("Modify funds", data);
+          toast({
+            description: `Successfully ${fundAction === "deposit" ? "deposited" : "withdrew"} $${cash}.`
+          })
+        } catch (error: any) {
+          console.error(error);
+          if (error.message === "Negative Balance Detected") {
+            toast({
+              variant: "destructive",
+              description: `Cannot withdraw more than current cash balance.`
+            })
+          }
+        }
+      }
+
     
  
       return (
@@ -117,6 +151,9 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setOpenRename(true)}>
                 Rename Portfolio
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFundOpen(true)}>
+                Add/Withdraw Funds
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -164,6 +201,43 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
                     Save
                   </Button>
                 </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={fundOpen} onOpenChange={setFundOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add/Withdraw Funds</DialogTitle>
+                <DialogDescription>
+                  Deposit or withdraw funds from portfolio
+                  <span className="font-bold">{" " + portfolio?.name}</span>
+                </DialogDescription>
+                <div className="border p-4 rounded-lg flex flex-col gap-4 ">
+                  <Label>I want to:</Label>
+                  <RadioGroup defaultValue="comfortable">
+                    <div className="flex items-center space-x-2 font-light">
+                      <RadioGroupItem value="default" id="r1" checked={fundAction === "deposit"} onClick={() => setFundAction("deposit")}/>
+                      <Label htmlFor="r1" className="font-normal">Deposit</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 font-light">
+                      <RadioGroupItem value="comfortable" id="r2" checked={fundAction === "withdraw"} onClick={() => setFundAction("withdraw")}/>
+                      <Label htmlFor="r2" className="font-normal">Withdraw</Label>
+                    </div>
+                  </RadioGroup>
+                  <Label>{"Amount ($):"}</Label>
+                  <Input type="number" value={cash} onChange={(e) => setCash(e.target.valueAsNumber)}></Input>
+                </div>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button size="sm" onClick={handleModifyFunds} disabled={ cash === 0}>
+                  Confirm
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

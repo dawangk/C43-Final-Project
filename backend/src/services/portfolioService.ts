@@ -69,15 +69,15 @@ export class PortfolioService {
         return {error: {status: 404, message: 'Portfolio not found'}};
       }
       let cashNum =
-          parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''));
-      let new_amount = amount + cashNum;
+          parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''))
+      let new_amount = (amount * 100 + cashNum * 100) / 100;
       if (new_amount < 0) {
         return {error: {status: 400, message: 'Negative Balance Detected'}};
       }
 
       const insert_result = await db.query(
-          `UPDATE Portfolio SET cash_account = $1 RETURNING port_id, cash_account`,
-          [new_amount]);
+          `UPDATE Portfolio SET cash_account = $1 WHERE user_id = $2 AND port_id = $3 RETURNING port_id, cash_account`,
+          [new_amount, user_id, port_id]);
 
       return {
         data: {message: 'Update successs!', result: insert_result.rows[0]}
