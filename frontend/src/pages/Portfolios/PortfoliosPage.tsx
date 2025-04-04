@@ -1,5 +1,6 @@
-import { createStockList, deleteStockList, getStockLists } from "@/api/stockListApiSlice";
-import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Dialog,
   DialogClose,
@@ -12,38 +13,37 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react"
-import { StockListTable } from "./StockListTable";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { createPortfolio, getPortfolios } from "@/api/portfolioApiSlice";
+import { DataTable } from "@/components/data-table";
+import { portfolioColumns } from "./portfolioColumns";
 
-export const StockListPage = () => {
-
+export const PortfoliosPage = () => {
   const [name, setName] = useState("");
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient()
-  const createStockListMutation = useMutation({
-    mutationFn: createStockList,
+  const createPortfolioMutation = useMutation({
+    mutationFn: createPortfolio,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
+      queryClient.invalidateQueries({ queryKey: ['portfolios'] })
     },
   })
 
-  const getStockListsQuery = useQuery({
-    queryKey: ["stock-lists"],
-    queryFn: getStockLists
+  const getPortfoliosQuery = useQuery({
+    queryKey: ["portfolios"],
+    queryFn: getPortfolios
   })
   const {toast} = useToast();
 
   const handleCreate = async () => {
     try {
-      const data = await createStockListMutation.mutateAsync({
+      const data = await createPortfolioMutation.mutateAsync({
         name: name,
       });
-      console.log("Create stock list", data);
+      console.log("Create Portfolio", data);
       toast({
-        description: `Successfully created stock list ${name}`
+        description: `Successfully created Portfolio ${name}`
       })
     } catch (error: any) {
       console.error(error);
@@ -51,7 +51,7 @@ export const StockListPage = () => {
       toast({
         title: "Error",
         variant: "destructive",
-        description: "Cannot create stock list with same name."
+        description: "Cannot create Portfolio with same name."
       })
     }
   }
@@ -59,15 +59,15 @@ export const StockListPage = () => {
   return (
     <div className="w-full p-8 flex flex-col gap-8">
       <div className="flex justify-between w-full">
-        <h1 className="text-xl">My Stock Lists</h1>
+        <h1 className="text-xl">My Portfolios</h1>
         
         <Dialog open={open} onOpenChange={setOpen}>
           <Button size="sm" onClick={() => setOpen(true)} >+ Create</Button>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Stock List</DialogTitle>
+              <DialogTitle>Create Portfolio</DialogTitle>
               <DialogDescription>
-                Make a new stock list to keep track of your favourite stocks.
+                Start a new portfolio to start investing.
               </DialogDescription>
               <div className="pt-4 flex flex-col gap-8">
                 <div className="flex flex-col gap-4">
@@ -85,7 +85,6 @@ export const StockListPage = () => {
                     <Button size="sm" onClick={handleCreate} >Create</Button>
                   </DialogClose>
                 </div>
-                
               </div>
               
             </DialogHeader>
@@ -94,10 +93,10 @@ export const StockListPage = () => {
       </div>
 
       <div>
-        {getStockListsQuery.isLoading ? (
+        {getPortfoliosQuery.isLoading ? (
           <Spinner />
         ) : (
-          <StockListTable data={getStockListsQuery?.data} />
+          <DataTable data={getPortfoliosQuery.data} columns={portfolioColumns}/>
         )}
       </div>
       

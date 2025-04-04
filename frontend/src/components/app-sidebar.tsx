@@ -52,11 +52,7 @@ const data = {
         },
         {
           title: "Portfolios",
-          url: "/dashboard/home",
-        },
-        {
-          title: "Shared with me",
-          url: "/dashboard/shared",
+          url: "/dashboard/portfolios",
         },
       ],
     },
@@ -68,6 +64,10 @@ const data = {
         {
           title: "Friends",
           url: "/dashboard/friends",
+        },
+        {
+          title: "Shared with me",
+          url: "/dashboard/shared",
         },
       ],
     },

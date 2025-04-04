@@ -1,6 +1,8 @@
-import { Stock, StockList, StockOwned } from "@/models/db-models"
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
+import { useToast } from "@/hooks/use-toast";
+import { Portfolio, StockOwned } from "@/models/db-models";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ColumnDef } from "@tanstack/react-table";
+import { useState } from "react";
 import {
   Dialog,
   DialogClose,
@@ -9,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,20 +18,17 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Link } from "react-router-dom"
-import { Label } from "@/components/ui/label"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { deleteStockList, updateStockList } from "@/api/stockListApiSlice"
-import { useToast } from "@/hooks/use-toast"
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
- 
-export const stockListColumns: ColumnDef<StockList>[] = [
+import { MoreHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
+import { deletePortfolio, updatePortfolio } from "@/api/portfolioApiSlice";
+import { Input } from "@/components/ui/input";
+import { deleteStockList } from "@/api/stockListApiSlice";
+
+export const portfolioColumns: ColumnDef<Portfolio>[] = [
   {
-    accessorKey: "sl_id",
+    accessorKey: "port_id",
     header: "ID",
   },
   {
@@ -38,17 +36,17 @@ export const stockListColumns: ColumnDef<StockList>[] = [
     header: "Name",
   },
   {
-    accessorKey: "visibility",
-    header: "Visibility",
+    accessorKey: "cash_account",
+    header: "Cash Available",
   },
   {
-    accessorKey: "performance",
-    header: "Performance",
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const stockList = row.original
+      const portfolio = row.original
 
       const queryClient = useQueryClient()
       const {toast} = useToast();
@@ -56,28 +54,26 @@ export const stockListColumns: ColumnDef<StockList>[] = [
       const [openRename, setOpenRename] = useState(false)
       const [newName, setNewName] = useState("")
       
-      const deleteStockListMutation = useMutation({
-        mutationFn: deleteStockList,
+      const deletePortfolioMutation = useMutation({
+        mutationFn: deletePortfolio,
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
+          queryClient.invalidateQueries({ queryKey: ['portfolios'] })
         },
       })
-      const updateStockListMutation = useMutation({
-        mutationFn: updateStockList,
+      const updatePortfolioMutation = useMutation({
+        mutationFn: updatePortfolio,
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
+          queryClient.invalidateQueries({ queryKey: ['portfolios'] })
         },
       })
 
       const handleDelete = async () => {
         try {
-          const data = await deleteStockListMutation.mutateAsync({
-            id: stockList.sl_id 
-          });
-          console.log("Delete stock list", data);
+          const data = await deletePortfolioMutation.mutateAsync(portfolio.port_id.toString());
+          console.log("Delete portfolio", data);
           toast({
             title: "Delete successful",
-            description: `Stock list ${stockList.name} has been successfully deleted.`
+            description: `Portfolio ${portfolio.name} has been successfully deleted.`
           })
         } catch (error: any) {
           console.error(error);
@@ -86,15 +82,15 @@ export const stockListColumns: ColumnDef<StockList>[] = [
 
       const handleRename = async () => {
         try {
-          const data = await updateStockListMutation.mutateAsync({
-            id: stockList.sl_id ,
+          const data = await updatePortfolioMutation.mutateAsync({
+            id: portfolio.port_id ,
             body: {
               name: newName
             }
           });
-          console.log("Rename stock list", data);
+          console.log("Rename portfolio", data);
           toast({
-            description: `Stock list ID ${stockList.sl_id} has been successfully renamed to ${newName}.`
+            description: `Portfolio ID ${portfolio.port_id} has been successfully renamed to ${newName}.`
           })
         } catch (error: any) {
           console.error(error);
@@ -104,7 +100,7 @@ export const stockListColumns: ColumnDef<StockList>[] = [
  
       return (
         <div className="flex gap-2 justify-end items-center">
-          <Link to={`/dashboard/stock-lists/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
+          <Link to={`/dashboard/portfolios/${portfolio.port_id}`}><Button variant="outline" size="sm"> View</Button></Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-4 p-0">
@@ -115,10 +111,10 @@ export const stockListColumns: ColumnDef<StockList>[] = [
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setOpen(true)}>
-                Delete Stock List
+                Delete Portfolio
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setOpenRename(true)}>
-                Rename Stock List
+                Rename Portfolio
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -126,9 +122,9 @@ export const stockListColumns: ColumnDef<StockList>[] = [
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete Stock List?</DialogTitle>
+                <DialogTitle>Delete Portfolio?</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete <span className="font-bold">{stockList.name}</span>?
+                  Are you sure you want to delete <span className="font-bold">{portfolio.name}</span>?
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -149,9 +145,9 @@ export const stockListColumns: ColumnDef<StockList>[] = [
           <Dialog open={openRename} onOpenChange={setOpenRename}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Rename Stock List</DialogTitle>
+                <DialogTitle>Rename Portfolio</DialogTitle>
                 <DialogDescription>
-                  You are renaming stock list {stockList.name}
+                  You are renaming portfolio {portfolio.name}
                 </DialogDescription>
               </DialogHeader>
               <Input value={newName} onChange={(e) => setNewName(e.target.value)}/>
@@ -175,8 +171,8 @@ export const stockListColumns: ColumnDef<StockList>[] = [
   },
 ]
 
-export const getViewStockListColumns = (
-  id: string,
+export const getViewPortfolioColumns = (
+  sl_id: string,
   queryClient: ReturnType<typeof useQueryClient>,
   toast: ReturnType<typeof useToast>["toast"]
 ): ColumnDef<StockOwned>[] => [
@@ -185,37 +181,22 @@ export const getViewStockListColumns = (
     header: "Ticker",
   },
   {
+    accessorKey: "amount",
+    header: "Shares owned",
+  },
+  {
     accessorKey: "price",
-    header: "Today's price",
+    header: "Current price",
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const stock = row.original;
       const [open, setOpen] = useState(false);
-
-      const deleteStockListMutation = useMutation({
-        mutationFn: deleteStockList,
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["stock-list", id] });
-        },
-      });
-
-      const handleDelete = async () => {
-        try {
-          const data = await deleteStockListMutation.mutateAsync({
-            id: stock.sl_id,
-            body: { symbol: stock.symbol },
-          });
-          console.log("Delete stock entry", data);
-          toast({
-            title: "Removal successful",
-            description: `Stock ${stock.symbol} has been successfully removed from ${id}.`,
-          });
-        } catch (error: any) {
-          console.error(error);
-        }
-      };
 
       return (
         <div className="flex gap-2 justify-end items-center">
@@ -229,7 +210,7 @@ export const getViewStockListColumns = (
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setOpen(true)}>
-                Remove stock from list
+                Manage Stock
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -237,10 +218,10 @@ export const getViewStockListColumns = (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Remove Stock?</DialogTitle>
+                <DialogTitle>Manage Stock</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to remove{" "}
-                  <span className="font-bold">{stock.symbol}</span>?
+                  Managing stock
+                  <span className="font-bold">{" " + stock.symbol}</span>
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -250,8 +231,8 @@ export const getViewStockListColumns = (
                   </Button>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Button size="sm" onClick={handleDelete}>
-                    Remove
+                  <Button size="sm">
+                    Save
                   </Button>
                 </DialogClose>
               </DialogFooter>

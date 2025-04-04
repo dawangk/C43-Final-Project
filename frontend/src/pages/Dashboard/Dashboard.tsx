@@ -14,6 +14,8 @@ import { Separator } from "@radix-ui/react-separator";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { StockListPage } from "../StockLists/StockListPage";
 import { ViewStockListPage } from "../StockLists/ViewStockListPage";
+import { PortfoliosPage } from "../Portfolios/PortfoliosPage";
+import { ViewPortfolioPage } from "../Portfolios/ViewPortfolioPage";
 
 export const Dashboard = () => {
   const location = useLocation();
@@ -34,8 +36,10 @@ export const Dashboard = () => {
                         <BreadcrumbItem className="hidden md:block">
                           {location.pathname === "/dashboard/home" ? (
                             <Link to="/dashboard/home">Home</Link>
-                          ) : location.pathname === "/dashboard/stock-lists" ? (
+                          ) : location.pathname.startsWith("/dashboard/stock-lists") ? (
                             <Link to="/dashboard/stock-lists">Stock Lists</Link>
+                          ) : location.pathname.startsWith("/dashboard/portfolios") ? (
+                            <Link to="/dashboard/portfolios">Portfolios</Link>
                           ) : (
                             <></>
                           )}
@@ -58,6 +62,8 @@ export const Dashboard = () => {
                     <Route path="/home" element={<>Home</>} />
                     <Route path="/stock-lists" element={<StockListPage/>} />
                     <Route path="/stock-lists/:id" element={<ViewStockListPage />} />
+                    <Route path="/portfolios" element={<PortfoliosPage/>} />
+                    <Route path="/portfolios/:id" element={<ViewPortfolioPage />} />
                   </Routes>
                 </div>
               </SidebarInset>
