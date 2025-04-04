@@ -41,6 +41,9 @@ export const StockListPage = () => {
         name: name,
       });
       console.log("Create stock list", data);
+      toast({
+        description: `Successfully created stock list ${name}`
+      })
     } catch (error: any) {
       console.error(error);
       if (error.message.startsWith("duplicate"))

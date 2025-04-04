@@ -2,8 +2,8 @@ import { getStockList, updateStockEntry } from "@/api/stockListApiSlice";
 import { DataTable } from "@/components/data-table";
 import { Spinner } from "@/components/ui/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom"
-import {viewStockListColumns} from "./columns"
+import { Link, useParams } from "react-router-dom"
+import {getViewStockListColumns} from "./columns"
 import {
   Dialog,
   DialogClose,
@@ -15,9 +15,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { StockSearch } from "@/components/StockSearch";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeftIcon, ArrowRightIcon, ChevronLeft } from "lucide-react";
 
 export const ViewStockListPage = () => {
 
@@ -50,15 +51,26 @@ export const ViewStockListPage = () => {
         id: id as string
       });
       console.log("Add stock", data);
+      toast({
+        description: `Added ${symbol} to list.`
+      })
     } catch (error: any) {
       console.error(error);
     }
   }
 
+  const columns = useMemo(() => {
+    if (!id) return [];
+    return getViewStockListColumns(id, queryClient, toast);
+  }, [id, queryClient, toast]);
+
   return (
     <div className="w-full p-8 flex flex-col gap-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl">{getStockListQuery.data?.info?.name ?? ""}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <Link to="/dashboard/stock-lists"><ChevronLeft className="cursor-pointer"/></Link>
+          <h1 className="text-xl">{getStockListQuery.data?.info?.name ?? ""}</h1>
+        </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -80,12 +92,9 @@ export const ViewStockListPage = () => {
                     <DialogClose asChild>
                       <Button type="button" variant="secondary">Cancel</Button>
                     </DialogClose>
-                    <DialogClose asChild>
-                      <Button size="sm" onClick={() => { 
-                        handleAdd();
-                        setOpen(false); // Close on add
-                      }}>Add</Button>
-                    </DialogClose>
+                    <Button size="sm" onClick={() => { 
+                      handleAdd();
+                    }}>Add</Button>
                   </div>
                 </div>
               </DialogDescription>
@@ -99,7 +108,10 @@ export const ViewStockListPage = () => {
         <div className="flex flex-col gap-4">
           <p>No. Stocks: {getStockListQuery.data?.count}</p>
           <div>
-             <DataTable data={getStockListQuery.data?.list} columns={viewStockListColumns}/>
+            <DataTable
+              data={getStockListQuery.data?.list}
+              columns={columns}
+            />
           </div>
         </div>
       )}
