@@ -24,7 +24,9 @@ import { MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { deletePortfolio, updatePortfolio } from "@/api/portfolioApiSlice";
 import { Input } from "@/components/ui/input";
-import { deleteStockList } from "@/api/stockListApiSlice";
+import { deleteStockList, updateStockEntry } from "@/api/stockListApiSlice";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 export const portfolioColumns: ColumnDef<Portfolio>[] = [
   {
@@ -172,7 +174,8 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
 ]
 
 export const getViewPortfolioColumns = (
-  sl_id: string,
+  port_id: string,
+  portfolio: Portfolio,
   queryClient: ReturnType<typeof useQueryClient>,
   toast: ReturnType<typeof useToast>["toast"]
 ): ColumnDef<StockOwned>[] => [
@@ -197,6 +200,86 @@ export const getViewPortfolioColumns = (
     cell: ({ row }) => {
       const stock = row.original;
       const [open, setOpen] = useState(false);
+      const [action, setAction] = useState("buy");
+      const [amount, setAmount] = useState(0)
+
+      const updateStockListEntryMutation = useMutation({
+        mutationFn: updateStockEntry,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['portfolio', port_id] })
+        },
+      })
+
+      const deleteStockListMutation = useMutation({
+        mutationFn: deleteStockList,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["portfolio", port_id] });
+        },
+      });
+
+      const handleBuySell = async () => {
+        try {
+          if (action === "buy") {
+            if (parseFloat(portfolio?.cash_account.slice(1)) > 0) {
+              const data = await updateStockListEntryMutation.mutateAsync({
+                body: {
+                  symbol: stock.symbol, 
+                  amount: stock.amount + amount,
+                }, 
+                id: stock.sl_id
+              });
+              console.log("Add stock", data);
+              toast({
+                description: `Successfully bought ${stock.amount} shares of ${stock.symbol}.`
+              })
+            }
+            else {
+              toast({
+                variant: "destructive",
+                description: `You do not have enough funds to buy.`
+              })
+            }
+
+          }
+          else if (action === "sell") {
+            if (stock.amount - amount < 0) {
+              // Cannot sell
+              toast({
+                variant: "destructive",
+                description: `You do not own enough shares to sell.`
+              })
+            }
+            else if (stock.amount - amount === 0) {
+              // Delete the stock from portfolio
+              const data = await deleteStockListMutation.mutateAsync({
+                id: stock.sl_id,
+                body: { symbol: stock.symbol },
+              });
+              console.log("Delete stock", data);
+              toast({
+                description: `Successfully sold ${amount} shares of ${stock.symbol}.`
+              })
+            }
+            else {
+              const data = await updateStockListEntryMutation.mutateAsync({
+                body: {
+                  symbol: stock.symbol, 
+                  amount: stock.amount - amount,
+                }, 
+                id: stock.sl_id
+              });
+              console.log("Sell stock", data);
+              toast({
+                description: `Successfully sold ${amount} shares of ${stock.symbol}.`
+              })
+            }
+          } else {
+            console.error("No action selected");
+          }
+        } catch (error: any) {
+          console.error(error);
+        }
+      }
 
       return (
         <div className="flex gap-2 justify-end items-center">
@@ -223,6 +306,21 @@ export const getViewPortfolioColumns = (
                   Managing stock
                   <span className="font-bold">{" " + stock.symbol}</span>
                 </DialogDescription>
+                <div className="border p-4 rounded-lg flex flex-col gap-4 ">
+                  <Label>I want to:</Label>
+                  <RadioGroup defaultValue="comfortable">
+                    <div className="flex items-center space-x-2 font-light">
+                      <RadioGroupItem value="default" id="r1" checked={action === "buy"} onClick={() => setAction("buy")}/>
+                      <Label htmlFor="r1" className="font-normal">Buy</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 font-light">
+                      <RadioGroupItem value="comfortable" id="r2" checked={action === "sell"} onClick={() => setAction("sell")}/>
+                      <Label htmlFor="r2" className="font-normal">Sell</Label>
+                    </div>
+                  </RadioGroup>
+                  <Label>No. shares:</Label>
+                  <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
+                </div>
               </DialogHeader>
               <DialogFooter>
                 <DialogClose asChild>
@@ -230,11 +328,9 @@ export const getViewPortfolioColumns = (
                     Cancel
                   </Button>
                 </DialogClose>
-                <DialogClose asChild>
-                  <Button size="sm">
-                    Save
-                  </Button>
-                </DialogClose>
+                <Button size="sm" onClick={handleBuySell} disabled={amount === 0}>
+                  Confirm
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

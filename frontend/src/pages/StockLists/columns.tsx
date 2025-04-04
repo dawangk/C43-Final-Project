@@ -42,10 +42,6 @@ export const stockListColumns: ColumnDef<StockList>[] = [
     header: "Visibility",
   },
   {
-    accessorKey: "performance",
-    header: "Performance",
-  },
-  {
     id: "actions",
     cell: ({ row }) => {
       const stockList = row.original

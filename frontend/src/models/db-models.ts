@@ -22,7 +22,7 @@ export type Portfolio = {
   port_id: number,
   user_id: number, 
   sl_id: number,
-  cash_account: number,
+  cash_account: string,
   name: string,
   created_at: string,
 }

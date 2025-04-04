@@ -53,26 +53,34 @@ export const ViewPortfolioPage = () => {
 
   const handleAdd = async () => {
     try {
-      const data = await addStockListEntryMutation.mutateAsync({
-        body: {
-          symbol: symbol, 
-          amount: amount + getCurrentAmount(symbol),
-        }, 
-        id: getPortfolioQuery.data?.info?.sl_id as string
-      });
-      console.log("Add stock", data);
-      toast({
-        description: `Added ${symbol} to list.`
-      })
+      if (parseFloat(getPortfolioQuery.data?.info?.cash_account.slice(1)) > 0) {
+        const data = await addStockListEntryMutation.mutateAsync({
+          body: {
+            symbol: symbol, 
+            amount: amount + getCurrentAmount(symbol),
+          }, 
+          id: getPortfolioQuery.data?.info?.sl_id as string
+        });
+        console.log("Add stock", data);
+        toast({
+          description: `Added ${symbol} to list.`
+        })
+      }
+      else {
+        toast({
+          variant: "destructive",
+          description: `You do not have enough funds to buy.`
+        })
+      }
     } catch (error: any) {
       console.error(error);
     }
   }
 
   const columns = useMemo(() => {
-    if (!id) return [];
-    return getViewPortfolioColumns(id, queryClient, toast);
-  }, [id, queryClient, toast]);
+    if (!id || !getPortfolioQuery.data) return [];
+    return getViewPortfolioColumns(id, getPortfolioQuery.data?.info, queryClient, toast);
+  }, [id, queryClient, toast, getPortfolioQuery.data]);
 
   return (
     <div className="w-full p-8 flex flex-col gap-8">
@@ -83,7 +91,9 @@ export const ViewPortfolioPage = () => {
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <Button size="sm" onClick={() => setOpen(true)}>Buy stock</Button>
+          <Button size="sm" onClick={() => {
+            setOpen(true)
+          }}>Buy stock</Button>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Buy stock</DialogTitle>
@@ -95,7 +105,7 @@ export const ViewPortfolioPage = () => {
                   setSymbol(s);
                 }}/>
                 <div className="border rounded-lg p-4 text-sm">
-                  <div>Adding Stock: <span className="font-bold">{symbol}</span></div>
+                  <div>Buying Stock: <span className="font-bold">{symbol}</span></div>
                   <div className="mt-4 flex flex-col gap-2">
                     <span>No. Shares</span>
                     <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
@@ -105,9 +115,13 @@ export const ViewPortfolioPage = () => {
                   <DialogClose asChild>
                     <Button type="button" variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <Button size="sm" onClick={() => { 
-                    handleAdd();
-                  }}>Add</Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => { 
+                      handleAdd();
+                    }}
+                    disabled={amount === 0}
+                  >Add</Button>
                 </div>
               </div>
               
@@ -115,6 +129,7 @@ export const ViewPortfolioPage = () => {
           </DialogContent>
         </Dialog>
       </div>
+      <div>Cash Available: <span className="font-bold"> {getPortfolioQuery.data?.info?.cash_account}</span></div>
       {getPortfolioQuery.isLoading && <Spinner/>}
       {getPortfolioQuery.error && <p>Error fetching data</p>}
       {getPortfolioQuery.data && (

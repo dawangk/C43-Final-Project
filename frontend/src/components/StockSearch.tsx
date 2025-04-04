@@ -10,10 +10,12 @@ import { Stock } from "@/models/db-models";
 
 interface StockSearchProps {
   onSelect: (symbol: string) => void;
+  autoFocus?: boolean;
 }
 
 export const StockSearch = ({
-  onSelect
+  onSelect,
+  autoFocus = false
 }: StockSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -22,9 +24,8 @@ export const StockSearch = ({
   const debouncedSearch = useDebounceValue(search, 250);
   useClickOutside(panelRef as React.RefObject<HTMLDivElement>, () => setShowPanel(false), showPanel, inputRef as React.RefObject<HTMLInputElement>);
   const getStocksQuery = useQuery({
-    queryKey: ["stocks"],
+    queryKey: ["stocks", debouncedSearch],
     queryFn: () => getStocks(debouncedSearch),
-    enabled: !!debouncedSearch
   })
 
   useEffect(() => {
@@ -32,6 +33,18 @@ export const StockSearch = ({
       getStocksQuery.refetch();
     }
   }, [debouncedSearch]);
+
+  // Only apply focus if explicitly requested
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      // Add a slight delay to avoid conflicts with Dialog's own focus management
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus]);
 
   return (
     <div className="relative w-full">
@@ -47,6 +60,7 @@ export const StockSearch = ({
         className="pl-10"
         onChange={(e) => setSearch(e.target.value)}
         onFocus={() => setShowPanel(true)}
+        autoFocus={false}
       />
       {showPanel &&  (
         <div
