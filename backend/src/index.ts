@@ -9,6 +9,7 @@ import asyncHandler from './middleware/asyncHandler';
 import {portfolioRouter} from './routes/portfolioRoutes';
 import {stockListRouter} from './routes/stockListRoutes';
 import {authRouter} from './routes/userRoutes';
+import { stockRouter } from './routes/stockRoutes';
 
 const app: Express = express();
 const HOST = 'localhost';
@@ -20,8 +21,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({extended: true}));
 
+app.use('/api/stock', stockRouter);
 app.use('/api/stocklist', stockListRouter);
-app.use('/api/portfolio', portfolioRouter)
+app.use('/api/portfolio', portfolioRouter);
 app.use('/auth', authRouter);
 
 

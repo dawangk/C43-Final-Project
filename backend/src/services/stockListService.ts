@@ -102,7 +102,7 @@ export class StockListService {
       user_id: number, sl_id: number, symbol: string,
       amount: number): Promise<ResponseType> {
     try {
-      if (!user_id || !sl_id || !symbol || !amount) {
+      if (!user_id || !sl_id || !symbol || amount < 0) {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
       const {data, error} = await this.getStockListById(user_id, sl_id);
@@ -114,7 +114,7 @@ export class StockListService {
       }
 
       const result = await db.query(
-          `INSERT INTO Stock (sl_id, symbol, amount) 
+          `INSERT INTO StockOwned (sl_id, symbol, amount) 
           VALUES ($1, $2, $3) 
           ON CONFLICT (sl_id, symbol) 
           DO UPDATE SET amount = EXCLUDED.amount 
@@ -147,7 +147,7 @@ export class StockListService {
       }
 
       const result = await db.query(
-          `DELETE FROM Stock WHERE sl_id = $1 AND symbol = $2 RETURNING sl_id, symbol`,
+          `DELETE FROM StockOwned WHERE sl_id = $1 AND symbol = $2 RETURNING sl_id, symbol`,
           [sl_id, symbol]);
 
       if (result.rowCount == 0) {

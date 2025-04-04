@@ -21,10 +21,10 @@ export const createStockList = async (data: any) => {
   return await res.json();
 }
 
-export const updateStockEntry = async (data: any, id: number) => {
-  const res = await fetch(`${SERVER_URL}/api/stocklist/${id}`, {
+export const updateStockEntry = async (data: any) => {
+  const res = await fetch(`${SERVER_URL}/api/stocklist/${data?.id}`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data?.body),
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",
@@ -80,10 +80,10 @@ export const getStockList = async (id: string) => {
   return await res.json();
 }
 
-export const updateStockList = async (data: any, id: string) => {
-  const res = await fetch(`${SERVER_URL}/api/stocklist/${id}`, {
+export const updateStockList = async (data: any) => {
+  const res = await fetch(`${SERVER_URL}/api/stocklist/${data?.id}`, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data?.body),
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",
@@ -102,10 +102,10 @@ export const updateStockList = async (data: any, id: string) => {
 }
 
 /* If provide symbol in body then deletes an entry. Otherwise deletes entire list.*/
-export const deleteStockList = async (data: any, id: string) => {
-  const res = await fetch(`${SERVER_URL}/api/stocklist/${id}`, {
+export const deleteStockList = async (data: any) => {
+  const res = await fetch(`${SERVER_URL}/api/stocklist/${data?.id}`, {
     method: "DELETE",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data?.body),
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",
