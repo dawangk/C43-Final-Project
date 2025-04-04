@@ -1,4 +1,4 @@
-import { createStockList, getStockLists } from "@/api/stockListApiSlice";
+import { createStockList, deleteStockList, getStockLists } from "@/api/stockListApiSlice";
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -38,7 +38,7 @@ export const StockListPage = () => {
   const handleCreate = async () => {
     try {
       const data = await createStockListMutation.mutateAsync({
-        name: name
+        name: name,
       });
       console.log("Create stock list", data);
     } catch (error: any) {

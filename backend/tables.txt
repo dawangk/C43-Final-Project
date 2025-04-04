@@ -31,9 +31,8 @@ CREATE TABLE StockList(
 	sl_id SERIAL PRIMARY KEY, 
 	user_id INT NOT NULL, 
 	name TEXT NOT NULL, 
-	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')),
+	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')) DEFAULT 'private',
     created_at TIMESTAMP DEFAULT NOW(), 
-	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 	CONSTRAINT unique_stock_list_name UNIQUE(user_id, name)
 );
 
@@ -53,8 +52,9 @@ CREATE TABLE StockOwned(
 	sl_id INT NOT NULL, 
 	symbol VARCHAR(5) NOT NULL, 
 	amount INT CHECK (amount > 0), 
-    created_at TIMESTAMP DEFAULT NOW(), 
-    updated_at TIMESTAMP DEFAULT NOW(), 
+  created_at TIMESTAMP DEFAULT NOW(), 
+  updated_at TIMESTAMP DEFAULT NOW(), 
+	PRIMARY KEY (sl_id, symbol),
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
 
@@ -127,6 +127,6 @@ CREATE TABLE HistoricalStockPerformance (
     PRIMARY KEY (symbol, timestamp)
 );
 
-INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;
+COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM 'C:\Users\kevin\Downloads\SP500History.csv' DELIMITER ',' CSV HEADER;
 
-COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM '/data/SP500History.csv' DELIMITER ',' CSV HEADER;
+INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;

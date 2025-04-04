@@ -99,7 +99,7 @@ export const ViewStockListPage = () => {
         <div className="flex flex-col gap-4">
           <p>No. Stocks: {getStockListQuery.data?.count}</p>
           <div>
-             <DataTable data={getStockListQuery.data} columns={viewStockListColumns}/>
+             <DataTable data={getStockListQuery.data?.list} columns={viewStockListColumns}/>
           </div>
         </div>
       )}
