@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StockSearch } from "@/components/StockSearch";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft } from "lucide-react";
@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { StockOwned } from "@/models/db-models";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getStock } from "@/api/stockApiSlice";
+import { moneyToNumber } from "@/utils/moneyToNumber";
 
 
 export const ViewPortfolioPage = () => {
@@ -44,6 +46,12 @@ export const ViewPortfolioPage = () => {
     enabled: !!id // Query will only run if id exists (is truthy)
   })
 
+  const getStockInfoQuery = useQuery({
+    queryKey: ['stock', symbol],
+    queryFn: () => getStock(symbol),
+    enabled: symbol.length > 0
+  })
+
   const addStockListEntryMutation = useMutation({
     mutationFn: updateStockEntry,
     onSuccess: () => {
@@ -58,6 +66,12 @@ export const ViewPortfolioPage = () => {
     },
   })
 
+  useEffect(() => {
+    if (symbol.length > 0) {
+      getStockInfoQuery.refetch();
+    }
+  }, [symbol])
+
   const getCurrentAmount = (symbol: string) => {
     const stocksOwned: StockOwned[] = getPortfolioQuery.data?.stock_list?.data?.list;
     const curAmt = stocksOwned.find((s: StockOwned) => s.symbol === symbol)?.amount ?? 0;
@@ -66,7 +80,8 @@ export const ViewPortfolioPage = () => {
 
   const handleAdd = async () => {
     try {
-      if (parseFloat(getPortfolioQuery.data?.info?.cash_account.slice(1)) > 0) {
+      // check that user has enough to buy
+      if (moneyToNumber(getPortfolioQuery.data?.info?.cash_account) >= getStockInfoQuery.data?.close * amount) {
         const data = await addStockListEntryMutation.mutateAsync({
           body: {
             symbol: symbol, 
@@ -75,8 +90,16 @@ export const ViewPortfolioPage = () => {
           id: getPortfolioQuery.data?.info?.sl_id as string
         });
         console.log("Add stock", data);
+
+        await modifyFundsMutation.mutateAsync({
+          body: {
+            amount: -getStockInfoQuery.data?.close * amount
+          }, 
+          id: id
+        });
+
         toast({
-          description: `Added ${symbol} to list.`
+          description: `Bought ${amount} shares of ${symbol} for ${getStockInfoQuery.data?.close * amount}.`
         })
       }
       else {
@@ -149,11 +172,27 @@ export const ViewPortfolioPage = () => {
                 <StockSearch onSelect={(s: string) => { 
                   setSymbol(s);
                 }}/>
-                <div className="border rounded-lg p-4 text-sm">
-                  <div>Buying Stock: <span className="font-bold">{symbol}</span></div>
+                <div className="w-full border rounded-lg p-4 text-sm">
+                  <div className="w-full flex gap-2 justify-between">
+                    <div>
+                      <div>Buying Stock: </div>
+                      <div className="font-bold text-2xl mb-4 mt-2">{symbol}</div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <div>Price per share: <span className="font-bold">${getStockInfoQuery.data?.close}</span></div>
+                      <div>Change today: 
+                        <span className={`font-bold ${getStockInfoQuery.data?.change_day >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          %{getStockInfoQuery.data?.change_day}
+                        </span>
+                      </div>
+                    </div>
+
+                  </div>
+                  
                   <div className="mt-4 flex flex-col gap-2">
                     <span>No. Shares</span>
                     <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
+                    <div>Total Price: <span className="font-bold">${amount ? getStockInfoQuery.data?.close * amount : 0}</span></div>
                   </div>
                 </div>
                 <div className="flex gap-4 items-center justify-center">

@@ -21,3 +21,20 @@ export const getStocks =
         res.status(500).json({message: 'Internal Server Error'});
       }
     });
+
+export const getStock =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const symbol = req.params.symbol;
+        const {data, error} = await stockService.getStock(symbol);
+
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error'});
+      }
+    });

@@ -185,6 +185,10 @@ export const getViewStockListColumns = (
     header: "Today's price",
   },
   {
+    accessorKey: "change_day",
+    header: "Change (1D)",
+  },
+  {
     id: "actions",
     cell: ({ row }) => {
       const stock = row.original;

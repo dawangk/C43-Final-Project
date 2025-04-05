@@ -1,8 +1,8 @@
 import { useToast } from "@/hooks/use-toast";
 import { Portfolio, StockOwned } from "@/models/db-models";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogClose,
@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { deleteStockList, updateStockEntry } from "@/api/stockListApiSlice";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { getStock } from "@/api/stockApiSlice";
+import { moneyToNumber } from "@/utils/moneyToNumber";
 
 export const portfolioColumns: ColumnDef<Portfolio>[] = [
   {
@@ -275,7 +277,13 @@ export const getViewPortfolioColumns = (
       const stock = row.original;
       const [open, setOpen] = useState(false);
       const [action, setAction] = useState("buy");
-      const [amount, setAmount] = useState(0)
+      const [amount, setAmount] = useState(0);
+
+      const getStockInfoQuery = useQuery({
+        queryKey: ['stock', stock.symbol],
+        queryFn: () => getStock(stock.symbol),
+        enabled: stock.symbol.length > 0
+      })
 
       const updateStockListEntryMutation = useMutation({
         mutationFn: updateStockEntry,
@@ -291,10 +299,18 @@ export const getViewPortfolioColumns = (
         },
       });
 
+      const modifyFundsMutation = useMutation({
+        mutationFn: modifyFunds,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['portfolio', port_id] })
+        },
+      })
+
       const handleBuySell = async () => {
         try {
           if (action === "buy") {
-            if (parseFloat(portfolio?.cash_account.slice(1)) > 0) {
+            // Check that the user has enough to buy
+            if (moneyToNumber(portfolio?.cash_account) > getStockInfoQuery.data?.close * amount) {
               const data = await updateStockListEntryMutation.mutateAsync({
                 body: {
                   symbol: stock.symbol, 
@@ -303,8 +319,16 @@ export const getViewPortfolioColumns = (
                 id: stock.sl_id
               });
               console.log("Add stock", data);
+
+              await modifyFundsMutation.mutateAsync({
+                body: {
+                  amount: -getStockInfoQuery.data?.close * amount
+                }, 
+                id: port_id
+              });
+
               toast({
-                description: `Successfully bought ${stock.amount} shares of ${stock.symbol}.`
+                description: `Successfully bought ${amount} shares of ${stock.symbol}.`
               })
             }
             else {
@@ -329,7 +353,16 @@ export const getViewPortfolioColumns = (
                 id: stock.sl_id,
                 body: { symbol: stock.symbol },
               });
-              console.log("Delete stock", data);
+              console.log("Sold stock", data);
+
+              await modifyFundsMutation.mutateAsync({
+                body: {
+                  amount: getStockInfoQuery.data?.close * amount
+                }, 
+                id: port_id
+              });
+              console.log("updated")
+
               toast({
                 description: `Successfully sold ${amount} shares of ${stock.symbol}.`
               })
@@ -343,6 +376,16 @@ export const getViewPortfolioColumns = (
                 id: stock.sl_id
               });
               console.log("Sell stock", data);
+
+              
+              await modifyFundsMutation.mutateAsync({
+                body: {
+                  amount: getStockInfoQuery.data?.close * amount
+                }, 
+                id: port_id
+              });
+              console.log("updated")
+              
               toast({
                 description: `Successfully sold ${amount} shares of ${stock.symbol}.`
               })
@@ -380,6 +423,16 @@ export const getViewPortfolioColumns = (
                   Managing stock
                   <span className="font-bold">{" " + stock.symbol}</span>
                 </DialogDescription>
+                <div className="w-full text-sm py-2">
+                  <div className="flex flex-col">
+                    <div>Price per share: <span className="font-bold">${getStockInfoQuery.data?.close}</span></div>
+                    <div>Change today: 
+                      <span className={`font-bold ${getStockInfoQuery.data?.change_day >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        %{getStockInfoQuery.data?.change_day}
+                      </span>
+                    </div>
+                  </div>
+                </div>
                 <div className="border p-4 rounded-lg flex flex-col gap-4 ">
                   <Label>I want to:</Label>
                   <RadioGroup defaultValue="comfortable">
@@ -394,6 +447,7 @@ export const getViewPortfolioColumns = (
                   </RadioGroup>
                   <Label>No. shares:</Label>
                   <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
+                  <div className="text-sm">Total Price: <span className="font-bold">${amount ? (getStockInfoQuery.data?.close * amount).toFixed(2) : 0}</span></div>
                 </div>
               </DialogHeader>
               <DialogFooter>
