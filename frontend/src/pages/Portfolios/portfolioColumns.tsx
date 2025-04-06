@@ -56,7 +56,7 @@ export const portfolioColumns: ColumnDef<PortfolioWithData>[] = [
     header: "Performance (1D)",
     cell: ({ row }) => {
       const val: number = row.getValue("performance_day")
-      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
     }
   },
   {
@@ -64,7 +64,7 @@ export const portfolioColumns: ColumnDef<PortfolioWithData>[] = [
     header: "Performance (YTD)",
     cell: ({ row }) => {
       const val: number = row.getValue("performance_ytd")
-      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
     }
   },
   {
@@ -278,6 +278,10 @@ export const getViewPortfolioColumns = (
   {
     accessorKey: "symbol",
     header: "Ticker",
+    cell: ({ row }) => {
+      const symbol: string = row.getValue("symbol")
+      return <Link to={`/dashboard/stock/${symbol}`} className="cursor-pointer hover:text-orange-600 underline">{symbol}</Link>
+    }
   },
   {
     accessorKey: "amount",

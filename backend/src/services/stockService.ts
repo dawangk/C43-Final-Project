@@ -49,4 +49,51 @@ export class StockService {
       };
     }
   }
+
+  
+  // Get historical information on a given stock for a given time period (week, month, quarter, year, 5 years)
+  async getStockHistory(symbol: string, period: string): Promise<ResponseType> {
+    try {
+      
+      let interval: string = "1 week";
+      if (period === "5 years") {
+        interval = "5 years"
+      } else if (period === "1 year") {
+        interval = "1 year"
+      } else if (period === "quarter") {
+        interval = "3 months"
+      } else if (period === "month") {
+        interval = "1 month"
+      } else if (period === "week") {
+        interval = "1 week"
+      }
+      console.log(interval)
+      const result = await db.query(
+        `
+          SELECT *
+          FROM HistoricalStockPerformance
+          WHERE symbol = $1
+            AND timestamp >= (
+                SELECT timestamp 
+                FROM HistoricalStockPerformance 
+                WHERE symbol = $1
+                ORDER BY timestamp DESC 
+                LIMIT 1
+              ) - CAST($2 AS INTERVAL)
+          ORDER BY timestamp;
+        `,
+        [symbol, interval]
+      );
+      return {
+        data: result.rows
+      };
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+
+
 }

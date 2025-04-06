@@ -127,13 +127,14 @@ CREATE TABLE HistoricalStockPerformance (
     PRIMARY KEY (symbol, timestamp)
 );
 
+-- Import csv 
+COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM 'C:\Users\kevin\Downloads\SP500History.csv' DELIMITER ',' CSV HEADER;
+
 -- Allows us to directly fetch the max timestamp per symbol (without sorting)
 CREATE INDEX idx_symbol_timestamp_desc ON HistoricalStockPerformance(symbol, timestamp DESC);
 
 -- Supports year-ago lookups (especially for large spans)
 CREATE INDEX idx_symbol_timestamp ON HistoricalStockPerformance(symbol, timestamp);
 
-
-COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM 'C:\Users\kevin\Downloads\SP500History.csv' DELIMITER ',' CSV HEADER;
 
 INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;

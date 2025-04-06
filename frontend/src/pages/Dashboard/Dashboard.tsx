@@ -16,6 +16,7 @@ import { StockListPage } from "../StockLists/StockListPage";
 import { ViewStockListPage } from "../StockLists/ViewStockListPage";
 import { PortfoliosPage } from "../Portfolios/PortfoliosPage";
 import { ViewPortfolioPage } from "../Portfolios/ViewPortfolioPage";
+import { StockPage } from "../Stocks/StockPage";
 
 export const Dashboard = () => {
   const location = useLocation();
@@ -41,7 +42,7 @@ export const Dashboard = () => {
                           ) : location.pathname.startsWith("/dashboard/portfolios") ? (
                             <Link to="/dashboard/portfolios">Portfolios</Link>
                           ) : (
-                            <></>
+                            <Link to={location.pathname}>Stock Info</Link>
                           )}
                         </BreadcrumbItem>
                         {/* <BreadcrumbSeparator className="hidden md:block" /> */}
@@ -64,6 +65,7 @@ export const Dashboard = () => {
                     <Route path="/stock-lists/:id" element={<ViewStockListPage />} />
                     <Route path="/portfolios" element={<PortfoliosPage/>} />
                     <Route path="/portfolios/:id" element={<ViewPortfolioPage />} />
+                    <Route path="stock/:symbol" element={<StockPage />}/>
                   </Routes>
                 </div>
               </SidebarInset>

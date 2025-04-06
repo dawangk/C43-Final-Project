@@ -266,11 +266,11 @@ export const ViewPortfolioPage = () => {
         </div>
         <div>
           <div>Performance (1D): </div>
-          <span className={`font-bold text-2xl ${(p_info && p_info.performance_day >= 0) ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info?.performance_day) ? "%" + p_info.performance_day  : "No Info"}</span>
+          <span className={`font-bold text-2xl ${(p_info && p_info.performance_day >= 0) ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info?.performance_day) ? "%" + p_info.performance_day  : "%0"}</span>
         </div>
         <div>
           <div>Performance (YTD): </div>
-          <span className={`font-bold text-2xl ${(p_info && p_info.performance_ytd) >= 0 ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info.performance_ytd) ? "%" + p_info.performance_ytd  : "No Info"}</span>
+          <span className={`font-bold text-2xl ${(p_info && p_info.performance_ytd) >= 0 ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info.performance_ytd) ? "%" + p_info.performance_ytd  : "%0"}</span>
         </div>
        
       </div>
