@@ -95,7 +95,7 @@ export const ViewStockListPage = () => {
                   <div className="w-full flex gap-2 justify-between">
                     <div>
                       <div>Adding Stock: </div>
-                      <div className="font-bold text-2xl mb-4 mt-2">{symbol}</div>
+                      <Link to={`/dashboard/stock/${symbol}`} className="cursor-pointer hover:text-orange-600 underline"><div className="font-bold text-2xl mb-4 mt-2">{symbol}</div></Link>
                     </div>
                     <div className="flex flex-col items-end">
                       <div>Price per share: <span className="font-bold">${getStockInfoQuery.data?.close}</span></div>
