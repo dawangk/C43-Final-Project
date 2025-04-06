@@ -47,12 +47,13 @@ export const ViewPortfolioPage = () => {
     enabled: !!id // Query will only run if id exists (is truthy)
   })
 
+  const p_info = getPortfolioQuery.data?.info
+
   const getStockInfoQuery = useQuery({
     queryKey: ['stock', symbol],
     queryFn: () => getStock(symbol),
     enabled: symbol.length > 0
   })
-
   const addStockListEntryMutation = useMutation({
     mutationFn: updateStockEntry,
     onSuccess: () => {
@@ -254,9 +255,24 @@ export const ViewPortfolioPage = () => {
         </Dialog>
 
       </div>
-      <div>
-        <div>Cash Available: </div>
-        <span className="font-bold text-green-500 text-2xl"> {getPortfolioQuery.data?.info?.cash_account}</span>
+      <div className="flex gap-12 ">
+        <div>
+          <div>Current Value: </div>
+          <span className="font-bold text-green-500 text-2xl"> ${getPortfolioQuery.data?.info?.market_value ?? 0}</span>
+        </div>
+        <div>
+          <div>Cash Available: </div>
+          <span className="font-bold text-2xl"> {getPortfolioQuery.data?.info?.cash_account}</span>
+        </div>
+        <div>
+          <div>Performance (1D): </div>
+          <span className={`font-bold text-2xl ${(p_info && p_info.performance_day >= 0) ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info?.performance_day) ? "%" + p_info.performance_day  : "No Info"}</span>
+        </div>
+        <div>
+          <div>Performance (YTD): </div>
+          <span className={`font-bold text-2xl ${(p_info && p_info.performance_ytd) >= 0 ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info.performance_ytd) ? "%" + p_info.performance_ytd  : "No Info"}</span>
+        </div>
+       
       </div>
       {getPortfolioQuery.isLoading && <Spinner/>}
       {getPortfolioQuery.error && <p>Error fetching data</p>}

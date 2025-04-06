@@ -123,7 +123,43 @@ export class PortfolioService {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
       const result = await db.query(
-          'SELECT * FROM Portfolio WHERE port_id = $1 AND user_id = $2',
+        `SELECT 
+            p.*,
+            ROUND(SUM(so.amount * latest.close)::NUMERIC, 2) AS market_value,
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_ytd
+        FROM Portfolio p
+        JOIN StockList sl ON p.sl_id = sl.sl_id
+        LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM HistoricalStockPerformance
+          WHERE symbol = so.symbol
+          ORDER BY timestamp DESC
+          LIMIT 1
+        ) latest ON true
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM HistoricalStockPerformance
+          WHERE symbol = so.symbol
+            AND timestamp <= (SELECT timestamp FROM HistoricalStockPerformance WHERE symbol = so.symbol ORDER BY timestamp DESC LIMIT 1) - INTERVAL '1 year'
+          ORDER BY timestamp DESC
+          LIMIT 1
+        ) past ON true
+        WHERE p.user_id = $2 AND p.port_id = $1
+        GROUP BY p.port_id, p.user_id;
+        `, 
           [port_id, user_id]);
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'Portfolio not found'}};
@@ -163,17 +199,25 @@ export class PortfolioService {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
       const result = await db.query(
-            // -- performance of a stock list is calculated for 1d and YTD. Each stock has different amount so we find weight avg perfromance.
+            // -- performance of a portfolio is calculated for 1d and YTD. Each stock has different amount so we find weight avg perfromance.
 
-          `SELECT 
+          `
+          SELECT 
             p.*,
-            ROUND(SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
-            ROUND(SUM(
-              so.amount * (
-                (latest.close - COALESCE(past.close, latest.close)) / 
-                NULLIF(COALESCE(past.close, latest.close), 0)
-              ) * 100
-            )::NUMERIC, 2) AS performance_ytd
+            ROUND(SUM(so.amount * latest.close)::NUMERIC, 2) AS market_value,
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_ytd
           FROM Portfolio p
           JOIN StockList sl ON p.sl_id = sl.sl_id
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
@@ -188,7 +232,13 @@ export class PortfolioService {
             SELECT *
             FROM HistoricalStockPerformance
             WHERE symbol = so.symbol
-              AND timestamp <= (SELECT timestamp FROM HistoricalStockPerformance WHERE symbol = so.symbol ORDER BY timestamp DESC LIMIT 1) - INTERVAL '1 year'
+              AND timestamp <= (
+                SELECT timestamp 
+                FROM HistoricalStockPerformance 
+                WHERE symbol = so.symbol 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+              ) - INTERVAL '1 year'
             ORDER BY timestamp DESC
             LIMIT 1
           ) past ON true

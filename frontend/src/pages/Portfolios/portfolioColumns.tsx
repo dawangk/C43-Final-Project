@@ -1,5 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
-import { Portfolio, StockOwned, StockOwnedWithData } from "@/models/db-models";
+import { Portfolio, PortfolioWithData, StockOwned, StockOwnedWithData } from "@/models/db-models";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { getStock } from "@/api/stockApiSlice";
 import { moneyToNumber } from "@/utils/moneyToNumber";
 
-export const portfolioColumns: ColumnDef<Portfolio>[] = [
+export const portfolioColumns: ColumnDef<PortfolioWithData>[] = [
   {
     accessorKey: "port_id",
     header: "ID",
@@ -38,6 +38,14 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
   {
     accessorKey: "name",
     header: "Name",
+  },
+  {
+    accessorKey: "market_value",
+    header: "Current Value",
+    cell: ({ row }) => {
+      const val: number = row.getValue("market_value")
+      return <div className="font-bold">${val ?? 0}</div>
+    }
   },
   {
     accessorKey: "cash_account",

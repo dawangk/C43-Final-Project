@@ -26,6 +26,7 @@ export type StockOwnedWithData = StockOwned & {
   low: number,
   timestamp: string,
   performance_day: number,
+  performance_ytd: number,
 }
 
 export type Portfolio = {
@@ -35,4 +36,10 @@ export type Portfolio = {
   cash_account: string,
   name: string,
   created_at: string,
+}
+
+export type PortfolioWithData = Portfolio & {
+  market_value: number,
+  performance_day: number,
+  performance_ytd: number,
 }
