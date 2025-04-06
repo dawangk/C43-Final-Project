@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getStock } from "@/api/stockApiSlice";
 import { moneyToNumber } from "@/utils/moneyToNumber";
+import { MoneyInput } from "@/components/money-input";
 
 
 export const ViewPortfolioPage = () => {
@@ -192,7 +193,7 @@ export const ViewPortfolioPage = () => {
                   <div className="mt-4 flex flex-col gap-2">
                     <span>No. Shares</span>
                     <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
-                    <div>Total Price: <span className="font-bold">${amount ? getStockInfoQuery.data?.close * amount : 0}</span></div>
+                    <div>Total Price: <span className="font-bold">${amount ? (getStockInfoQuery.data?.close * amount).toFixed(2) : 0}</span></div>
                   </div>
                 </div>
                 <div className="flex gap-4 items-center justify-center">
@@ -233,8 +234,8 @@ export const ViewPortfolioPage = () => {
                     <Label htmlFor="r2" className="font-normal">Withdraw</Label>
                   </div>
                 </RadioGroup>
-                <Label>{"Amount ($):"}</Label>
-                <Input type="number" value={cash} onChange={(e) => setCash(e.target.valueAsNumber)}></Input>
+                <Label>{"Amount:"}</Label>
+                <MoneyInput value={cash} onChange={setCash}/>
               </div>
             </DialogHeader>
             <DialogFooter>
