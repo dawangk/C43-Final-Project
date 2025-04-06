@@ -19,17 +19,28 @@ export class StockService {
   async getStock(symbol: string): Promise<ResponseType> {
     try {
       const result = await db.query(
-        `SELECT symbol, timestamp, open, high, low, close, volume, ROUND((((close - open) / open) * 100)::NUMERIC, 2) AS change_day
-        FROM HistoricalStockPerformance WHERE symbol = $1
-        AND timestamp >= ALL(
-          SELECT timestamp FROM HistoricalStockPerformance WHERE symbol = $1
-        )`, 
+
+        // -- this first one doesn't use index of (symbol, timestamp DESC) so it forces sequential scan
+
+        // `SELECT symbol, timestamp, open, high, low, close, volume, ROUND((((close - open) / open) * 100)::NUMERIC, 2) AS performance_day
+        // FROM HistoricalStockPerformance WHERE symbol = $1
+        // AND timestamp >= ALL(
+        //   SELECT timestamp FROM HistoricalStockPerformance WHERE symbol = $1
+        // )`, 
+
+        // -- this one uses index
+        `SELECT symbol, timestamp, open, high, low, close, volume,
+                ROUND((((close - open) / open) * 100)::NUMERIC, 2) AS performance_day
+          FROM HistoricalStockPerformance
+          WHERE symbol = $1
+          ORDER BY timestamp DESC
+          LIMIT 1`,
         [symbol]
       );
       return {
         data: {
           ...result.rows[0],
-          change_day: parseFloat(result.rows[0].change_day),
+          performance_day: parseFloat(result.rows[0].performance_day),
         },
       };
     } catch (error: any) {

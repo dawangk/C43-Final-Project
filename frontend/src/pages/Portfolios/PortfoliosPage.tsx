@@ -6,16 +6,14 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
-import { createPortfolio, getPortfolios } from "@/api/portfolioApiSlice";
+import { createPortfolio, getPortfoliosWithData } from "@/api/portfolioApiSlice";
 import { DataTable } from "@/components/data-table";
 import { portfolioColumns } from "./portfolioColumns";
 
@@ -32,7 +30,7 @@ export const PortfoliosPage = () => {
 
   const getPortfoliosQuery = useQuery({
     queryKey: ["portfolios"],
-    queryFn: getPortfolios
+    queryFn: getPortfoliosWithData
   })
   const {toast} = useToast();
 

@@ -56,6 +56,53 @@ export class StockListService {
     }
   }
 
+  
+  async getStockListByIdWithData(user_id: number, sl_id: number):
+      Promise<ResponseType> {
+    try {
+      if (!user_id || !sl_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const result = await db.query(
+          'SELECT * FROM StockList WHERE sl_id = $1 AND user_id = $2',
+          [sl_id, user_id]);
+      if (result.rowCount == 0) {
+        return {error: {status: 404, message: 'stockList not found'}};
+      }
+      const stocksWithData = await db.query(
+        `SELECT 
+          so.*, 
+          hsp_latest.*, 
+          ROUND((((hsp_latest.close - hsp_latest.open) / hsp_latest.open) * 100)::NUMERIC, 2) AS performance_day,
+          ROUND((((hsp_latest.close - hsp_past.close) / hsp_past.close) * 100)::NUMERIC, 2) AS performance_ytd
+        FROM StockOwned so
+        JOIN (
+          SELECT DISTINCT ON (symbol) *
+          FROM HistoricalStockPerformance
+          ORDER BY symbol, timestamp DESC
+        ) hsp_latest ON so.symbol = hsp_latest.symbol
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM HistoricalStockPerformance h
+          WHERE h.symbol = so.symbol
+            AND h.timestamp <= hsp_latest.timestamp - INTERVAL '1 year'
+          ORDER BY h.timestamp DESC
+          LIMIT 1
+        ) hsp_past ON true
+        WHERE so.sl_id = $1`,
+        [sl_id]);
+
+      return {
+        data: {info: result.rows[0], count: stocksWithData.rowCount, list: stocksWithData.rows}
+      };
+
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
   async getStockLists(user_id: number): Promise<ResponseType> {
     try {
       if (!user_id) {
@@ -63,6 +110,55 @@ export class StockListService {
       }
       const result = await db.query(
           'SELECT * FROM StockList WHERE user_id = $1', [user_id]);
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getStockListsWithData(user_id: number): Promise<ResponseType> {
+    try {
+      if (!user_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const result = await db.query(
+          // -- performance of a stock list is calculated for 1d and YTD. Each stock is given equal weight, so we just find AVG performance.
+          `
+          SELECT 
+            sl.*,
+            ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
+            ROUND(AVG(
+              ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
+            )::NUMERIC, 2) AS performance_ytd
+          FROM StockList sl
+          LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) latest ON true
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+              AND timestamp <= (
+                SELECT timestamp 
+                FROM HistoricalStockPerformance 
+                WHERE symbol = so.symbol 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+              ) - INTERVAL '1 year'
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) past ON true
+          WHERE sl.user_id = $1
+          GROUP BY sl.sl_id, sl.user_id
+          `, 
+          [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {

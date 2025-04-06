@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { StockSearch } from "@/components/StockSearch";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft } from "lucide-react";
-import { getPortfolio, modifyFunds } from "@/api/portfolioApiSlice";
+import { getPortfolio, getPortfolioWithData, modifyFunds } from "@/api/portfolioApiSlice";
 import { updateStockEntry } from "@/api/stockListApiSlice";
 import { Input } from "@/components/ui/input";
 import { StockOwned } from "@/models/db-models";
@@ -43,7 +43,7 @@ export const ViewPortfolioPage = () => {
 
   const getPortfolioQuery = useQuery({
     queryKey: ["portfolio", id],
-    queryFn: () => getPortfolio(id as string),
+    queryFn: () => getPortfolioWithData(id as string),
     enabled: !!id // Query will only run if id exists (is truthy)
   })
 
@@ -57,6 +57,7 @@ export const ViewPortfolioPage = () => {
     mutationFn: updateStockEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', id] })
+      queryClient.invalidateQueries({ queryKey: ['portfolios'] })
     },
   })
 
@@ -64,6 +65,7 @@ export const ViewPortfolioPage = () => {
     mutationFn: modifyFunds,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', id] })
+      queryClient.invalidateQueries({ queryKey: ['portfolios'] })
     },
   })
 
@@ -182,8 +184,8 @@ export const ViewPortfolioPage = () => {
                     <div className="flex flex-col items-end">
                       <div>Price per share: <span className="font-bold">${getStockInfoQuery.data?.close}</span></div>
                       <div>Change today: 
-                        <span className={`font-bold ${getStockInfoQuery.data?.change_day >= 0 ? "text-green-500" : "text-red-500"}`}>
-                          %{getStockInfoQuery.data?.change_day}
+                        <span className={`font-bold ${getStockInfoQuery.data?.performance_day >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          %{getStockInfoQuery.data?.performance_day}
                         </span>
                       </div>
                     </div>

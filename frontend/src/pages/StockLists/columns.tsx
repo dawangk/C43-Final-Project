@@ -1,4 +1,4 @@
-import { Stock, StockList, StockOwned } from "@/models/db-models"
+import { Stock, StockList, StockOwned, StockOwnedWithData } from "@/models/db-models"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
 import {
@@ -40,6 +40,22 @@ export const stockListColumns: ColumnDef<StockList>[] = [
   {
     accessorKey: "visibility",
     header: "Visibility",
+  },
+  {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
   },
   {
     id: "actions",
@@ -175,18 +191,30 @@ export const getViewStockListColumns = (
   id: string,
   queryClient: ReturnType<typeof useQueryClient>,
   toast: ReturnType<typeof useToast>["toast"]
-): ColumnDef<StockOwned>[] => [
+): ColumnDef<StockOwnedWithData>[] => [
   {
     accessorKey: "symbol",
     header: "Ticker",
   },
   {
-    accessorKey: "price",
+    accessorKey: "close",
     header: "Today's price",
   },
   {
-    accessorKey: "change_day",
-    header: "Change (1D)",
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>%{val}</div>
+    }
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
   },
   {
     id: "actions",
@@ -198,6 +226,7 @@ export const getViewStockListColumns = (
         mutationFn: deleteStockList,
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["stock-list", id] });
+          queryClient.invalidateQueries({ queryKey: ["stock-lists"] });
         },
       });
 

@@ -61,8 +61,46 @@ export const getStockLists = async () => {
   return await res.json();
 }
 
+export const getStockListsWithData = async () => {
+  const res = await fetch(`${SERVER_URL}/api/stocklist/data`, {
+    method: "GET",headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/plain, */*",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(
+      errorData?.message || `Error: ${res.status} ${res.statusText}`
+    );
+  }
+  
+  return await res.json();
+}
+
 export const getStockList = async (id: string) => {
   const res = await fetch(`${SERVER_URL}/api/stocklist/${id}`, {
+    method: "GET",headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/plain, */*",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(
+      errorData?.message || `Error: ${res.status} ${res.statusText}`
+    );
+  }
+  
+  return await res.json();
+}
+
+export const getStockListWithData = async (id: string) => {
+  const res = await fetch(`${SERVER_URL}/api/stocklist/data/${id}`, {
     method: "GET",headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",

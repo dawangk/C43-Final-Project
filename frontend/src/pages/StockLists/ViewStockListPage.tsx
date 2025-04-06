@@ -1,4 +1,4 @@
-import { getStockList, updateStockEntry } from "@/api/stockListApiSlice";
+import { getStockList, getStockListWithData, updateStockEntry } from "@/api/stockListApiSlice";
 import { DataTable } from "@/components/data-table";
 import { Spinner } from "@/components/ui/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { StockSearch } from "@/components/StockSearch";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft } from "lucide-react";
+import { getStock } from "@/api/stockApiSlice";
 
 export const ViewStockListPage = () => {
 
@@ -29,14 +30,21 @@ export const ViewStockListPage = () => {
 
   const getStockListQuery = useQuery({
     queryKey: ["stock-list", id],
-    queryFn: () => getStockList(id as string),
+    queryFn: () => getStockListWithData(id as string),
     enabled: !!id // Query will only run if id exists (is truthy)
+  })
+
+  const getStockInfoQuery = useQuery({
+    queryKey: ['stock', symbol],
+    queryFn: () => getStock(symbol),
+    enabled: symbol.length > 0
   })
 
   const addStockListEntryMutation = useMutation({
     mutationFn: updateStockEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-list', id] })
+      queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
     },
   })
 
@@ -83,9 +91,24 @@ export const ViewStockListPage = () => {
                 <StockSearch onSelect={(s: string) => { 
                   setSymbol(s);
                 }}/>
-                <div className="border rounded-lg p-4">
-                  Adding Stock: <span className="font-bold">{symbol}</span>
+                <div className="border rounded-lg p-4 text-sm">
+                  <div className="w-full flex gap-2 justify-between">
+                    <div>
+                      <div>Adding Stock: </div>
+                      <div className="font-bold text-2xl mb-4 mt-2">{symbol}</div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <div>Price per share: <span className="font-bold">${getStockInfoQuery.data?.close}</span></div>
+                      <div>Change today: 
+                        <span className={`font-bold ${getStockInfoQuery.data?.performance_day >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          %{getStockInfoQuery.data?.performance_day}
+                        </span>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
+                
                 <div className="flex gap-4 items-center justify-center">
                   <DialogClose asChild>
                     <Button type="button" variant="secondary">Cancel</Button>

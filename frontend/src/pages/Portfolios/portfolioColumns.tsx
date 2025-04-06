@@ -1,5 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
-import { Portfolio, StockOwned } from "@/models/db-models";
+import { Portfolio, StockOwned, StockOwnedWithData } from "@/models/db-models";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
@@ -44,8 +44,20 @@ export const portfolioColumns: ColumnDef<Portfolio>[] = [
     header: "Cash Available",
   },
   {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
+  },
+  {
     accessorKey: "performance_ytd",
     header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
   },
   {
     id: "actions",
@@ -254,7 +266,7 @@ export const getViewPortfolioColumns = (
   portfolio: Portfolio,
   queryClient: ReturnType<typeof useQueryClient>,
   toast: ReturnType<typeof useToast>["toast"]
-): ColumnDef<StockOwned>[] => [
+): ColumnDef<StockOwnedWithData>[] => [
   {
     accessorKey: "symbol",
     header: "Ticker",
@@ -264,12 +276,24 @@ export const getViewPortfolioColumns = (
     header: "Shares owned",
   },
   {
-    accessorKey: "price",
+    accessorKey: "close",
     header: "Current price",
+  },
+  {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>%{val}</div>
+    }
   },
   {
     accessorKey: "performance_ytd",
     header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
   },
   {
     id: "actions",
@@ -289,6 +313,7 @@ export const getViewPortfolioColumns = (
         mutationFn: updateStockEntry,
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['portfolio', port_id] })
+          queryClient.invalidateQueries({ queryKey: ['portfolios'] })
         },
       })
 
@@ -296,6 +321,7 @@ export const getViewPortfolioColumns = (
         mutationFn: deleteStockList,
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["portfolio", port_id] });
+          queryClient.invalidateQueries({ queryKey: ['portfolios'] })
         },
       });
 
@@ -303,6 +329,7 @@ export const getViewPortfolioColumns = (
         mutationFn: modifyFunds,
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['portfolio', port_id] })
+          queryClient.invalidateQueries({ queryKey: ['portfolios'] })
         },
       })
 
@@ -427,8 +454,8 @@ export const getViewPortfolioColumns = (
                   <div className="flex flex-col">
                     <div>Price per share: <span className="font-bold">${getStockInfoQuery.data?.close}</span></div>
                     <div>Change today: 
-                      <span className={`font-bold ${getStockInfoQuery.data?.change_day >= 0 ? "text-green-500" : "text-red-500"}`}>
-                        %{getStockInfoQuery.data?.change_day}
+                      <span className={`font-bold ${getStockInfoQuery.data?.performance_day >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        %{getStockInfoQuery.data?.performance_day}
                       </span>
                     </div>
                   </div>

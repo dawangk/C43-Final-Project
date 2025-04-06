@@ -40,8 +40,46 @@ export const getPortfolios = async () => {
   return await res.json();
 }
 
+export const getPortfoliosWithData = async () => {
+  const res = await fetch(`${SERVER_URL}/api/portfolio/data`, {
+    method: "GET",headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/plain, */*",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(
+      errorData?.message || `Error: ${res.status} ${res.statusText}`
+    );
+  }
+  
+  return await res.json();
+}
+
 export const getPortfolio = async (id: string) => {
   const res = await fetch(`${SERVER_URL}/api/portfolio/${id}`, {
+    method: "GET",headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/plain, */*",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(
+      errorData?.message || `Error: ${res.status} ${res.statusText}`
+    );
+  }
+  
+  return await res.json();
+}
+
+export const getPortfolioWithData = async (id: string) => {
+  const res = await fetch(`${SERVER_URL}/api/portfolio/data/${id}`, {
     method: "GET",headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",

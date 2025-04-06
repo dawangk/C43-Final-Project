@@ -1,4 +1,4 @@
-import { createStockList, deleteStockList, getStockLists } from "@/api/stockListApiSlice";
+import { createStockList, deleteStockList, getStockLists, getStockListsWithData } from "@/api/stockListApiSlice";
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -32,7 +32,7 @@ export const StockListPage = () => {
 
   const getStockListsQuery = useQuery({
     queryKey: ["stock-lists"],
-    queryFn: getStockLists
+    queryFn: getStockListsWithData
   })
   const {toast} = useToast();
 

@@ -18,6 +18,16 @@ export type StockOwned = {
   updated_at: string,
 }
 
+export type StockOwnedWithData = StockOwned & {
+  open: number,
+  close: number,
+  volume: number,
+  high: number,
+  low: number,
+  timestamp: string,
+  performance_day: number,
+}
+
 export type Portfolio = {
   port_id: number,
   user_id: number, 
