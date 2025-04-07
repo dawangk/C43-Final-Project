@@ -90,6 +90,11 @@ export const FileUpload = ({
     e.preventDefault();
     if (files.length === 0) return;
 
+    if (!port_id) {
+      console.error("No portfolio id")
+      return;
+    }
+
     const invalidFiles = files.filter(file => {
       // Check by file extension
       return !file.name.toLowerCase().endsWith('.csv');
@@ -108,14 +113,7 @@ export const FileUpload = ({
     
     // Create FormData object to send files
     const formData = new FormData();
-    files.forEach((file, index) => {
-      formData.append(`file-${index}`, file);
-    });
-
-    if (!port_id) {
-      console.error("No portfolio id")
-      return;
-    }
+    formData.append('file', files[0]);
     
     // Execute the mutation
     uploadMutation.mutate({formData, port_id: port_id});

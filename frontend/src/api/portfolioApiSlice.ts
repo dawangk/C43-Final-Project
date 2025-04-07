@@ -162,7 +162,7 @@ export const modifyFunds = async (data: any) => {
 
 // Upload csv of recorded stock performance for a portfolio
 export const uploadFile = async (args: UploadArgs) => {
-  const res = await fetch(`${SERVER_URL}/api/portfolio/${args.port_id}`, {
+  const res = await fetch(`${SERVER_URL}/api/portfolio/data/${args.port_id}`, {
     method: "POST",
     body: args.formData,
     credentials: "include",
