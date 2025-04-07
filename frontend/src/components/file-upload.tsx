@@ -89,6 +89,19 @@ export const FileUpload = ({
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (files.length === 0) return;
+
+    const invalidFiles = files.filter(file => {
+      // Check by file extension
+      return !file.name.toLowerCase().endsWith('.csv');
+      // Alternative: Check by MIME type
+      // return file.type !== 'text/csv';
+    });
+    
+    if (invalidFiles.length > 0) {
+      setUploadStatus('error');
+      setErrorMessage(`Only CSV files are allowed. Please remove: ${invalidFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
     
     setUploadStatus('uploading');
     setErrorMessage(null);
