@@ -8,8 +8,8 @@ import db from './db/connectDb';
 import asyncHandler from './middleware/asyncHandler';
 import {portfolioRouter} from './routes/portfolioRoutes';
 import {stockListRouter} from './routes/stockListRoutes';
+import {stockRouter} from './routes/stockRoutes';
 import {authRouter} from './routes/userRoutes';
-import { stockRouter } from './routes/stockRoutes';
 
 const app: Express = express();
 const HOST = 'localhost';
