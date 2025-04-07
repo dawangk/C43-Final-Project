@@ -485,7 +485,7 @@ export const getViewPortfolioColumns = (
                     </div>
                   </RadioGroup>
                   <Label>No. shares:</Label>
-                  <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
+                  <Input type="number" value={amount} onChange={(e) => setAmount(Math.round(e.target.valueAsNumber))}></Input>
                   <div className="text-sm">Total Price: <span className="font-bold">${amount ? (getStockInfoQuery.data?.close * amount).toFixed(2) : 0}</span></div>
                 </div>
               </DialogHeader>
