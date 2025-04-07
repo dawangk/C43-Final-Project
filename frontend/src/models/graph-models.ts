@@ -1,0 +1,1 @@
+export type CandlestickData = [number, number, number, number];  // [open, close, low, high]

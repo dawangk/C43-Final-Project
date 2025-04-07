@@ -45,23 +45,20 @@ export function LoginForm({
         email: values.email,
         password: values.password
       });
-      const error = loginMutation.error;
-      console.log("Login", data, error);
+      console.log("Login", data);
 
-      if (!error) {
-        // Set user details to localstorage
-        setCredentials(data?.user);
-        // Go to dashboard
-        navigate("/dashboard/home");
-      } else {
-        if (
-          (error as any).status === 401
-        ) {
-          setInvalidCredentials(true);
-        }
+      // Set user details to localstorage
+      setCredentials(data?.user);
+      // Go to dashboard
+      navigate("/dashboard/home");
+      
+    } catch (error: any) {
+      if (
+        error?.message === "Invalid email or password"
+      ) {
+        setInvalidCredentials(true);
       }
-    } catch (err) {
-      console.error(err);
+      console.error(error);
     }
     setIsSubmitting(false);
   };

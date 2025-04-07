@@ -15,6 +15,7 @@ function isMoneyNumberString(value: number): boolean {
 
 
 export class PortfolioService {
+
   async createPortfolio(user_id: number, name: string): Promise<ResponseType> {
     try {
       if (!user_id || !name) {
@@ -69,15 +70,15 @@ export class PortfolioService {
         return {error: {status: 404, message: 'Portfolio not found'}};
       }
       let cashNum =
-          parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''));
-      let new_amount = amount + cashNum;
+          parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''))
+      let new_amount = (amount * 100 + cashNum * 100) / 100;
       if (new_amount < 0) {
         return {error: {status: 400, message: 'Negative Balance Detected'}};
       }
 
       const insert_result = await db.query(
-          `UPDATE Portfolio SET cash_account = $1 RETURNING port_id, cash_account`,
-          [new_amount]);
+          `UPDATE Portfolio SET cash_account = $1 WHERE user_id = $2 AND port_id = $3 RETURNING port_id, cash_account`,
+          [new_amount, user_id, port_id]);
 
       return {
         data: {message: 'Update successs!', result: insert_result.rows[0]}
@@ -115,6 +116,68 @@ export class PortfolioService {
     }
   }
 
+  async getPortfolioByIdWithData(user_id: number, port_id: number):
+      Promise<ResponseType> {
+    try {
+      if (!user_id || !port_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const result = await db.query(
+        `SELECT 
+            p.*,
+            ROUND(SUM(so.amount * latest.close)::NUMERIC, 2) AS market_value,
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_ytd
+        FROM Portfolio p
+        JOIN StockList sl ON p.sl_id = sl.sl_id
+        LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM HistoricalStockPerformance
+          WHERE symbol = so.symbol
+          ORDER BY timestamp DESC
+          LIMIT 1
+        ) latest ON true
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM HistoricalStockPerformance
+          WHERE symbol = so.symbol
+            AND timestamp <= (SELECT timestamp FROM HistoricalStockPerformance WHERE symbol = so.symbol ORDER BY timestamp DESC LIMIT 1) - INTERVAL '1 year'
+          ORDER BY timestamp DESC
+          LIMIT 1
+        ) past ON true
+        WHERE p.user_id = $2 AND p.port_id = $1
+        GROUP BY p.port_id, p.user_id;
+        `, 
+          [port_id, user_id]);
+      if (result.rowCount == 0) {
+        return {error: {status: 404, message: 'Portfolio not found'}};
+      }
+      console.log(result.rows[0].sl_id);
+
+      const stockListWithData = await stockListService.getStockListByIdWithData(
+          user_id, result.rows[0].sl_id);
+
+      return {data: {info: result.rows[0], stock_list: stockListWithData}};
+
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
   async getPortfolios(user_id: number): Promise<ResponseType> {
     try {
       if (!user_id) {
@@ -122,9 +185,67 @@ export class PortfolioService {
       }
       const result = await db.query(
           'SELECT * FROM Portfolio WHERE user_id = $1', [user_id]);
-      if (result.rowCount == 0) {
-        return {error: {status: 404, message: 'no portfolios found for user'}};
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getPortfoliosWithData(user_id: number): Promise<ResponseType> {
+    try {
+      if (!user_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
       }
+      const result = await db.query(
+            // -- performance of a portfolio is calculated for 1d and YTD. Each stock has different amount so we find weight avg perfromance.
+
+          `
+          SELECT 
+            p.*,
+            ROUND(SUM(so.amount * latest.close)::NUMERIC, 2) AS market_value,
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_ytd
+          FROM Portfolio p
+          JOIN StockList sl ON p.sl_id = sl.sl_id
+          LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) latest ON true
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+              AND timestamp <= (
+                SELECT timestamp 
+                FROM HistoricalStockPerformance 
+                WHERE symbol = so.symbol 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+              ) - INTERVAL '1 year'
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) past ON true
+          WHERE p.user_id = $1
+          GROUP BY p.port_id, p.user_id;
+          `, 
+        [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {

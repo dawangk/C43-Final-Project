@@ -47,27 +47,22 @@ export function SignupForm({
     setShowSignupError(false);
     setShowSuccess(false);
     try {
-      signupMutation.mutate({
+      const data = await signupMutation.mutateAsync({
         username: values.username,
         email: values.email,
         password: values.password
       });
-      const data = signupMutation.data;
-      const error = signupMutation.error;
-      console.log("Signup", data, error);
+      console.log("Signup", data);
       
-      if (error) {
-        if ((error as any)?.message.endsWith("Username or email already in use.")) {
-          setShowUserExists(true);
-        } else {
-          setShowSignupError(true);
-        }
+      setShowSuccess(true);
+      
+    } catch (error: any) {
+      if (error?.message === "Username or email already in use.") {
+        setShowUserExists(true);
       } else {
-        setShowSuccess(true);
+        setShowSignupError(true);
       }
-    } catch (err) {
-      setShowSignupError(true);
-      console.error(err);
+      console.error(error);
     }
     setIsSubmitting(false);
   };
