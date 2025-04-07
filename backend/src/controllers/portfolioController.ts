@@ -65,8 +65,32 @@ export const getPortfolioWithData =
           ({data, error} =
                await portfolioService.getPortfolioByIdWithData(user_id, id));
         } else {
-          ({data, error} = await portfolioService.getPortfoliosWithData(user_id));
+          ({data, error} =
+               await portfolioService.getPortfoliosWithData(user_id));
         }
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error', error});
+      }
+    });
+
+export const uploadPortfolioData =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const id = Number(req.params.id);
+        const user_id = (req as any).user.user_id;
+        if (!req.file) {
+          return res.status(400).json({error: 'No file uploaded'});
+        }
+        const file: Express.Multer.File = req.file;
+
+        const {data, error} =
+            await portfolioService.uploadPortfolioData(user_id, id, file);
         if (error) {
           res.status(error.status).json({message: error.message});
           return;
