@@ -1,5 +1,7 @@
 import bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
+import {parse} from 'csv-parse';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
 
 import db from '../db/connectDb';
@@ -15,7 +17,6 @@ function isMoneyNumberString(value: number): boolean {
 
 
 export class PortfolioService {
-
   async createPortfolio(user_id: number, name: string): Promise<ResponseType> {
     try {
       if (!user_id || !name) {
@@ -69,8 +70,7 @@ export class PortfolioService {
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'Portfolio not found'}};
       }
-      let cashNum =
-          parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''))
+      let cashNum = parseFloat(result.rows[0].cash_account.replace(/[$,]/g, ''))
       let new_amount = (amount * 100 + cashNum * 100) / 100;
       if (new_amount < 0) {
         return {error: {status: 400, message: 'Negative Balance Detected'}};
@@ -123,7 +123,7 @@ export class PortfolioService {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
       const result = await db.query(
-        `SELECT 
+          `SELECT 
             p.*,
             ROUND(SUM(so.amount * latest.close)::NUMERIC, 2) AS market_value,
             ROUND((
@@ -159,7 +159,7 @@ export class PortfolioService {
         ) past ON true
         WHERE p.user_id = $2 AND p.port_id = $1
         GROUP BY p.port_id, p.user_id;
-        `, 
+        `,
           [port_id, user_id]);
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'Portfolio not found'}};
@@ -193,13 +193,53 @@ export class PortfolioService {
     }
   }
 
+  async uploadPortfolioData(
+      user_id: number, port_id: number,
+      file: Express.Multer.File): Promise<ResponseType> {
+    try {
+      if (!user_id || !port_id || !file) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const parser =
+          fs.createReadStream(file.path).pipe(parse({columns: true}));
+      let cnt = 0;
+      for await (const row of parser) {
+        if (!row.symbol || !row.timestamp || !row.open || !row.close ||
+            !row.high || !row.low || !row.volume)
+          continue;
+        await db.query(
+            `INSERT INTO recordedstockperformance 
+            (port_id, symbol, timestamp, open, high, low, close, volume) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (port_id, symbol, timestamp)
+            DO UPDATE SET
+            open = EXCLUDED.open,
+            high = EXCLUDED.high,
+            low = EXCLUDED.low, 
+            close = EXCLUDED.close,
+            volume = EXCLUDED.volume`,
+            [
+              port_id, row.symbol, row.timestamp, row.open, row.high, row.low,
+              row.close, row.volume
+            ]);
+        cnt++;
+      }
+      return {data: {message: 'upload success!', rowCount: cnt}};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
   async getPortfoliosWithData(user_id: number): Promise<ResponseType> {
     try {
       if (!user_id) {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
       const result = await db.query(
-            // -- performance of a portfolio is calculated for 1d and YTD. Each stock has different amount so we find weight avg perfromance.
+          // -- performance of a portfolio is calculated for 1d and YTD. Each
+          // stock has different amount so we find weight avg perfromance.
 
           `
           SELECT 
@@ -244,8 +284,8 @@ export class PortfolioService {
           ) past ON true
           WHERE p.user_id = $1
           GROUP BY p.port_id, p.user_id;
-          `, 
-        [user_id]);
+          `,
+          [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {
