@@ -1,5 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
-import { Portfolio, PortfolioWithData, StockOwned, StockOwnedWithData } from "@/models/db-models";
+import { Portfolio, PortfolioResponse, PortfolioWithData, StockOwned, StockOwnedWithData, StockStats } from "@/models/db-models";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
@@ -271,7 +271,7 @@ export const portfolioColumns: ColumnDef<PortfolioWithData>[] = [
 
 export const getViewPortfolioColumns = (
   port_id: string,
-  portfolio: Portfolio,
+  portfolio: PortfolioResponse,
   queryClient: ReturnType<typeof useQueryClient>,
   toast: ReturnType<typeof useToast>["toast"]
 ): ColumnDef<StockOwnedWithData>[] => [
@@ -326,6 +326,7 @@ export const getViewPortfolioColumns = (
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['portfolio', port_id] })
           queryClient.invalidateQueries({ queryKey: ['portfolios'] })
+          queryClient.invalidateQueries({ queryKey: ['portfolioStats'] })
         },
       })
 
@@ -334,6 +335,7 @@ export const getViewPortfolioColumns = (
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["portfolio", port_id] });
           queryClient.invalidateQueries({ queryKey: ['portfolios'] })
+          queryClient.invalidateQueries({ queryKey: ['portfolioStats'] })
         },
       });
 
@@ -345,11 +347,15 @@ export const getViewPortfolioColumns = (
         },
       })
 
+      const getAmountByStock = (symbol: string) => {
+        return portfolio.stock_list.data.list.find((e) => e.symbol === symbol)?.amount;
+      }
+
       const handleBuySell = async () => {
         try {
           if (action === "buy") {
             // Check that the user has enough to buy
-            if (moneyToNumber(portfolio?.cash_account) > getStockInfoQuery.data?.close * amount) {
+            if (moneyToNumber(portfolio?.info?.cash_account) > getStockInfoQuery.data?.close * amount) {
               const data = await updateStockListEntryMutation.mutateAsync({
                 body: {
                   symbol: stock.symbol, 
@@ -470,6 +476,7 @@ export const getViewPortfolioColumns = (
                         %{getStockInfoQuery.data?.performance_day}
                       </span>
                     </div>
+                    <div className="text-sm">Current no. owned shares: <span className="font-bold">{getAmountByStock(stock.symbol)}</span></div>
                   </div>
                 </div>
                 <div className="border p-4 rounded-lg flex flex-col gap-4 ">
@@ -484,6 +491,7 @@ export const getViewPortfolioColumns = (
                       <Label htmlFor="r2" className="font-normal">Sell</Label>
                     </div>
                   </RadioGroup>
+
                   <Label>No. shares:</Label>
                   <Input type="number" value={amount} onChange={(e) => setAmount(Math.round(e.target.valueAsNumber))}></Input>
                   <div className="text-sm">Total Price: <span className="font-bold">${amount ? (getStockInfoQuery.data?.close * amount).toFixed(2) : 0}</span></div>
@@ -506,3 +514,26 @@ export const getViewPortfolioColumns = (
     },
   },
 ];
+
+export const coeff_and_beta_columns: ColumnDef<StockStats>[] = [
+  {
+    accessorKey: "symbol",
+    header: "Symbol",
+  },
+  {
+    accessorKey: "coefficient_of_variance",
+    header: "Coeff. of Variance",
+    cell: ({ row }) => {
+      const val: number = row.getValue("coefficient_of_variance")
+      return <div>{val.toFixed(4)}</div>
+    }
+  },
+  {
+    accessorKey: "beta",
+    header: "Beta",
+    cell: ({ row }) => {
+      const val: number = row.getValue("beta")
+      return <div>{val.toFixed(4)}</div>
+    }
+  },
+]

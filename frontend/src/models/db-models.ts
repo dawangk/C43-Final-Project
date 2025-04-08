@@ -29,6 +29,12 @@ export type StockOwnedWithData = StockOwned & {
   performance_ytd: number,
 }
 
+export type StockStats = {
+  symbol: string,
+  coefficient_of_variance: number,
+  beta: number,
+}
+
 export type Portfolio = {
   port_id: number,
   user_id: number, 
@@ -38,8 +44,26 @@ export type Portfolio = {
   created_at: string,
 }
 
+export type PortfolioResponse = {
+  info: Portfolio
+  stock_list: {
+    data: {
+      info: StockList
+      list: StockOwned[]
+    }
+  }
+}
+
+
 export type PortfolioWithData = Portfolio & {
   market_value: number,
   performance_day: number,
   performance_ytd: number,
+}
+
+export type MatrixCell = {
+  stock_a: string,
+  stock_b: string,
+  covariance: number,
+  correlation: number
 }

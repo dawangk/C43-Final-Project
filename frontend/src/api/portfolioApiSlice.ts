@@ -176,3 +176,23 @@ export const uploadFile = async (args: UploadArgs) => {
   
   return await res.json();
 }
+
+// Gets stats of a portoflio 
+export const getPortfolioStats = async (id: string, period: string) => {
+  const res = await fetch(`${SERVER_URL}/api/portfolio/stats/${id}?period=${period}`, {
+    method: "GET",headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/plain, */*",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(
+      errorData?.message || `Error: ${res.status} ${res.statusText}`
+    );
+  }
+  
+  return await res.json();
+}

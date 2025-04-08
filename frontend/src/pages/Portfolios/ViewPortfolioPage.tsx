@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { StockSearch } from "@/components/StockSearch";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft } from "lucide-react";
+import { ChartNoAxesCombined, ChevronLeft } from "lucide-react";
 import { getPortfolio, getPortfolioWithData, modifyFunds } from "@/api/portfolioApiSlice";
 import { updateStockEntry } from "@/api/stockListApiSlice";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import { getStock } from "@/api/stockApiSlice";
 import { moneyToNumber } from "@/utils/moneyToNumber";
 import { MoneyInput } from "@/components/money-input";
 import { FileUpload } from "@/components/file-upload";
+import { PortfolioStatsDialog } from "./PortfolioStatsDialog";
 
 
 export const ViewPortfolioPage = () => {
@@ -42,6 +43,7 @@ export const ViewPortfolioPage = () => {
   const [fundAction, setFundAction] = useState("deposit")
   const [fundOpen, setFundOpen] = useState(false);
   const [importOpen, setImportOpen]= useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const getPortfolioQuery = useQuery({
     queryKey: ["portfolio", id],
@@ -61,6 +63,7 @@ export const ViewPortfolioPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', id] })
       queryClient.invalidateQueries({ queryKey: ['portfolios'] })
+      queryClient.invalidateQueries({ queryKey: ['portfolioStats'] })
     },
   })
 
@@ -105,7 +108,7 @@ export const ViewPortfolioPage = () => {
         });
 
         toast({
-          description: `Bought ${amount} shares of ${symbol} for ${getStockInfoQuery.data?.close * amount}.`
+          description: `Bought ${amount} shares of ${symbol} for $${getStockInfoQuery.data?.close * amount}.`
         })
       }
       else {
@@ -148,7 +151,7 @@ export const ViewPortfolioPage = () => {
 
   const columns = useMemo(() => {
     if (!id || !getPortfolioQuery.data) return [];
-    return getViewPortfolioColumns(id, getPortfolioQuery.data?.info, queryClient, toast);
+    return getViewPortfolioColumns(id, getPortfolioQuery.data, queryClient, toast);
   }, [id, queryClient, toast, getPortfolioQuery.data]);
 
   return (
@@ -168,6 +171,12 @@ export const ViewPortfolioPage = () => {
               setOpen(true)
             }}>
             Buy stock
+          </Button>
+          <Button size="sm" onClick={() => {
+              setStatsOpen(true)
+            }}>
+              <ChartNoAxesCombined />
+            Calculate Stats
           </Button>
           <Button size="sm" variant="outline" onClick={() => {
               setImportOpen(true)
@@ -294,6 +303,8 @@ export const ViewPortfolioPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {id && <PortfolioStatsDialog id={id} open={statsOpen} setOpen={setStatsOpen} stocks={getPortfolioQuery.data?.stock_list?.data?.list.map((s: StockOwned) => s.symbol)}/>}
 
       </div>
       <div className="flex gap-12 ">
