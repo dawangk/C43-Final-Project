@@ -1,3 +1,4 @@
+import { UploadArgs } from "@/components/file-upload";
 import { SERVER_URL } from "./config"
 
 export const createPortfolio = async (data: any) => {
@@ -156,5 +157,22 @@ export const modifyFunds = async (data: any) => {
     );
   }
 
+  return await res.json();
+}
+
+// Upload csv of recorded stock performance for a portfolio
+export const uploadFile = async (args: UploadArgs) => {
+  const res = await fetch(`${SERVER_URL}/api/portfolio/data/${args.port_id}`, {
+    method: "POST",
+    body: args.formData,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      `Error: ${res.status} ${res.statusText}`
+    );
+  }
+  
   return await res.json();
 }

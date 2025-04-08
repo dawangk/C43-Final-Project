@@ -27,6 +27,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getStock } from "@/api/stockApiSlice";
 import { moneyToNumber } from "@/utils/moneyToNumber";
 import { MoneyInput } from "@/components/money-input";
+import { FileUpload } from "@/components/file-upload";
 
 
 export const ViewPortfolioPage = () => {
@@ -40,6 +41,7 @@ export const ViewPortfolioPage = () => {
   const [cash, setCash] = useState(0)
   const [fundAction, setFundAction] = useState("deposit")
   const [fundOpen, setFundOpen] = useState(false);
+  const [importOpen, setImportOpen]= useState(false);
 
   const getPortfolioQuery = useQuery({
     queryKey: ["portfolio", id],
@@ -140,6 +142,10 @@ export const ViewPortfolioPage = () => {
     }
   }
 
+  const handleImport = () => {
+
+  }
+
   const columns = useMemo(() => {
     if (!id || !getPortfolioQuery.data) return [];
     return getViewPortfolioColumns(id, getPortfolioQuery.data?.info, queryClient, toast);
@@ -162,6 +168,11 @@ export const ViewPortfolioPage = () => {
               setOpen(true)
             }}>
             Buy stock
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => {
+              setImportOpen(true)
+            }}>
+            Import data
           </Button>
         </div>
 
@@ -195,7 +206,7 @@ export const ViewPortfolioPage = () => {
                   
                   <div className="mt-4 flex flex-col gap-2">
                     <span>No. Shares</span>
-                    <Input type="number" value={amount} onChange={(e) => setAmount(e.target.valueAsNumber)}></Input>
+                    <Input type="number" value={amount} onChange={(e) => setAmount(Math.round(e.target.valueAsNumber))}></Input>
                     <div>Total Price: <span className="font-bold">${amount ? (getStockInfoQuery.data?.close * amount).toFixed(2) : 0}</span></div>
                   </div>
                 </div>
@@ -249,6 +260,36 @@ export const ViewPortfolioPage = () => {
               </DialogClose>
               <Button size="sm" onClick={handleModifyFunds} disabled={ cash === 0}>
                 Confirm
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={importOpen} onOpenChange={setImportOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import S&P500 data</DialogTitle>
+              <DialogDescription>
+                Please import data in .csv format. Ensure that dates added are after 2018-02-07 to prevent conflicts in data. See below for csv format:
+                <br></br>
+                <br></br>
+                Timestamp,Open,High,Low,Close,Volume,Code
+                <br></br>
+                2013-02-08,15.07,15.12,14.63,14.75,8407500,AAL
+                <br></br>
+              </DialogDescription>
+              <div className="border p-4 rounded-lg flex flex-col gap-4 ">
+                    <FileUpload port_id={id}/>
+              </div>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button size="sm" onClick={handleImport} disabled={ cash === 0}>
+                Import
               </Button>
             </DialogFooter>
           </DialogContent>
