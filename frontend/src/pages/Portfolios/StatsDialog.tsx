@@ -26,27 +26,28 @@ import { coeff_and_beta_columns } from "./portfolioColumns";
 import { generateCorrelationColumns, pivotCorrelationMatrix } from "@/utils/pivotTable";
 import { MatrixCell } from "@/models/db-models";
 import { Label } from "@/components/ui/label";
+import { getStockListStats } from "@/api/stockListApiSlice";
 
-interface PortfolioStatsDialogProps {
-  id: string,
+interface StatsDialogProps {
+  sl_id: string,
   open: boolean,
   setOpen: (_: boolean) => void;
   stocks: string[]
 }
 
-export const PortfolioStatsDialog = ({
-  id,
+export const StatsDialog = ({
+  sl_id,
   open,
   setOpen,
   stocks
-}: PortfolioStatsDialogProps) => {
+}: StatsDialogProps) => {
 
   const [period, setPeriod] = useState("month");
 
   const getStatisticsQuery = useQuery({
-    queryKey: ['portfolioStats', id, period],
-    queryFn: () => getPortfolioStats(id, period),
-    enabled: !!(id && period)
+    queryKey: ['stock-list-stats', sl_id, period],
+    queryFn: () => getStockListStats(sl_id, period),
+    enabled: !!(sl_id && period)
   })
 
   const matrix = getStatisticsQuery.data?.matrix ?? []
@@ -58,9 +59,9 @@ export const PortfolioStatsDialog = ({
     <Dialog open={open} onOpenChange={setOpen}>
     <DialogContent className="w-auto h-auto max-w-fit max-h-screen">
       <DialogHeader>
-        <DialogTitle>Portfolio Statistics</DialogTitle>
+        <DialogTitle>Stock Statistics</DialogTitle>
         <DialogDescription>
-          We've calculated statistics for your portfolio:
+          We've calculated statistics for your stocks:
         </DialogDescription>
         <div className="border p-4 rounded-lg flex flex-col gap-4 ">
             {getStatisticsQuery.isLoading && <Spinner/>}

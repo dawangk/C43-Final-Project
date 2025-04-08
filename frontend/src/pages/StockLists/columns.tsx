@@ -229,6 +229,7 @@ export const getViewStockListColumns = (
       const deleteStockListMutation = useMutation({
         mutationFn: deleteStockList,
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['stock-list-stats', id] })
           queryClient.invalidateQueries({ queryKey: ["stock-list", id] });
           queryClient.invalidateQueries({ queryKey: ["stock-lists"] });
         },
