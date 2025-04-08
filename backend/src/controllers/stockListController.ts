@@ -39,7 +39,8 @@ export const getStockLists =
         let data, error;
         console.log(id);
         if (id) {
-          ({data, error} = await stockListService.getStockListById(user_id, id));
+          ({data, error} =
+               await stockListService.getStockListById(user_id, id));
         } else {
           ({data, error} = await stockListService.getStockLists(user_id));
         }
@@ -61,9 +62,11 @@ export const getStockListsWithData =
         const user_id = (req as any).user.user_id
         let data, error;
         if (id) {
-          ({data, error} = await stockListService.getStockListByIdWithData(user_id, id));
+          ({data, error} =
+               await stockListService.getStockListByIdWithData(user_id, id));
         } else {
-          ({data, error} = await stockListService.getStockListsWithData(user_id));
+          ({data, error} =
+               await stockListService.getStockListsWithData(user_id));
         }
         if (error) {
           res.status(error.status).json({message: error.message});
@@ -139,6 +142,23 @@ export const updateStockEntry =
       } catch (error) {
         res.status(500).json({message: 'Internal Server Error'});
       }
-
     });
 
+export const getStockListStats =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const id = Number(req.params.id);
+        const user_id = (req as any).user.user_id;
+        const {period} = req.query;
+        const {data, error} = await stockListService.getStockListStats(
+            user_id, id, period as string);
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error', error});
+      }
+    });

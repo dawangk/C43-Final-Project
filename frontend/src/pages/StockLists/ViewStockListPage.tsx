@@ -17,14 +17,17 @@ import { Button } from "@/components/ui/button";
 import { useMemo, useState } from "react";
 import { StockSearch } from "@/components/StockSearch";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft } from "lucide-react";
+import { ChartNoAxesCombined, ChevronLeft } from "lucide-react";
 import { getStock } from "@/api/stockApiSlice";
+import { StatsDialog } from "../Portfolios/StatsDialog";
+import { StockOwned } from "@/models/db-models";
 
 export const ViewStockListPage = () => {
 
   const { id } = useParams();
   const [symbol, setSymbol] = useState("");
   const [open, setOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const {toast} = useToast();
   const queryClient = useQueryClient()
 
@@ -43,6 +46,7 @@ export const ViewStockListPage = () => {
   const addStockListEntryMutation = useMutation({
     mutationFn: updateStockEntry,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock-list-stats', id] })
       queryClient.invalidateQueries({ queryKey: ['stock-list', id] })
       queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
     },
@@ -79,8 +83,17 @@ export const ViewStockListPage = () => {
           <h1 className="text-xl">{getStockListQuery.data?.info?.name ?? ""}</h1>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <div className="flex gap-4">
           <Button size="sm" onClick={() => setOpen(true)}>Add stock</Button>
+          <Button size="sm" onClick={() => {
+              setStatsOpen(true)
+            }}>
+              <ChartNoAxesCombined />
+            Calculate Stats
+          </Button>
+        </div>
+
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add stock</DialogTitle>
@@ -122,6 +135,9 @@ export const ViewStockListPage = () => {
             </DialogHeader>
           </DialogContent>
         </Dialog>
+
+        {id && <StatsDialog sl_id={getStockListQuery.data?.info?.sl_id} open={statsOpen} setOpen={setStatsOpen} stocks={getStockListQuery.data?.list.map((s: StockOwned) => s.symbol)}/>}
+        
       </div>
       {getStockListQuery.isLoading && <Spinner/>}
       {getStockListQuery.error && <p>Error fetching data</p>}

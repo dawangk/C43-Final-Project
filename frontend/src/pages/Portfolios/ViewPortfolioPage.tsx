@@ -28,7 +28,7 @@ import { getStock } from "@/api/stockApiSlice";
 import { moneyToNumber } from "@/utils/moneyToNumber";
 import { MoneyInput } from "@/components/money-input";
 import { FileUpload } from "@/components/file-upload";
-import { PortfolioStatsDialog } from "./PortfolioStatsDialog";
+import { StatsDialog } from "./StatsDialog";
 
 
 export const ViewPortfolioPage = () => {
@@ -304,7 +304,7 @@ export const ViewPortfolioPage = () => {
           </DialogContent>
         </Dialog>
 
-        {id && <PortfolioStatsDialog id={id} open={statsOpen} setOpen={setStatsOpen} stocks={getPortfolioQuery.data?.stock_list?.data?.list.map((s: StockOwned) => s.symbol)}/>}
+        {id && <StatsDialog sl_id={getPortfolioQuery.data?.info?.sl_id} open={statsOpen} setOpen={setStatsOpen} stocks={getPortfolioQuery.data?.stock_list?.data?.list.map((s: StockOwned) => s.symbol)}/>}
 
       </div>
       <div className="flex gap-12 ">
