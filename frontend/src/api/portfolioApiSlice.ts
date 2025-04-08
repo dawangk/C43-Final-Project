@@ -160,6 +160,27 @@ export const modifyFunds = async (data: any) => {
   return await res.json();
 }
 
+export const transferFunds = async (data: any) => {
+  const res = await fetch(`${SERVER_URL}/api/portfolio/transfer`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/plain, */*",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(
+      errorData?.message || `Error: ${res.status} ${res.statusText}`
+    );
+  }
+
+  return await res.json();
+}
+
 // Upload csv of recorded stock performance for a portfolio
 export const uploadFile = async (args: UploadArgs) => {
   const res = await fetch(`${SERVER_URL}/api/portfolio/data/${args.port_id}`, {

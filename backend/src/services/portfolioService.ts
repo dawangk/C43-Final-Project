@@ -91,6 +91,58 @@ export class PortfolioService {
     }
   }
 
+  async transferFunds(user_id: number, id_1: number, id_2: number, amount: number):
+  Promise<ResponseType> {
+    try {
+      if (!user_id || !id_1 || !id_2 || !amount) {
+        return {error: {status: 400, message: 'Missing/Invalid parameters.'}};
+      }
+      if (!isMoneyNumberString(amount)) {
+        return {error: {status: 400, message: 'Bad amount format.'}};
+      }
+
+      // Use transaction to atomically update the cash account of both accounts
+      await db.query('BEGIN');
+
+      // Check balance
+      const res = await db.query(
+        `SELECT cash_account FROM Portfolio WHERE port_id = $1 AND user_id = $2`,
+        [id_1, user_id]
+      );
+  
+      if (res.rows.length === 0) {
+        throw new Error(`Sender portfolio ${id_1} does not exist.`);
+      }
+  
+      const senderBalance = parseFloat(res.rows[0].cash_account.replace(/[^0-9.-]+/g,""));
+      if (senderBalance < amount) {
+        throw new Error('Insufficient funds.');
+      }
+  
+      // Subtract from sender
+      await db.query(
+        `UPDATE Portfolio SET cash_account = cash_account - $1::MONEY WHERE port_id = $2 AND user_id = $3`,
+        [amount, id_1, user_id]
+      );
+  
+      // Add to receiver
+      await db.query(
+        `UPDATE Portfolio SET cash_account = cash_account + $1::MONEY WHERE port_id = $2 AND user_id = $3`,
+        [amount, id_2, user_id]
+      );
+  
+      await db.query('COMMIT');
+
+      return {
+        data: {message: 'Update successs!', result: {message: "Transaction success"}}
+      }
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
   async getPortfolioById(user_id: number, port_id: number):
       Promise<ResponseType> {
     try {

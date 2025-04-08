@@ -10,6 +10,7 @@ import {
   updatePortfolio,
   uploadPortfolioData,
   getPortfolioStats,
+  transferFunds
 } from "../controllers/portfolioController";
 import { authHandler } from "../middleware/authHandler";
 
@@ -26,6 +27,7 @@ portfolioRouter.get("/", authHandler, getPortfolios);
 
 portfolioRouter.put("/:id", authHandler, updatePortfolio);
 portfolioRouter.put("/modifyFund/:id", authHandler, modifyFunds);
+portfolioRouter.post("/transfer", authHandler, transferFunds);
 
 portfolioRouter.delete("/:id", authHandler, deletePortfolio);
 

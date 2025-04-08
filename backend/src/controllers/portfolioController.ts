@@ -161,6 +161,28 @@ export const modifyFunds = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+
+export const transferFunds = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    console.log('jere')
+    const user_id = (req as any).user.user_id;
+    const {id_1, id_2, amount} = req.body;
+
+    console.log(id_1, id_2, amount)
+
+    const {data, error} =
+        await portfolioService.transferFunds(user_id, id_1, id_2, amount);
+
+    if (error) {
+      res.status(error.status).json({message: error.message});
+      return;
+    }
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({message: 'Internal Server Error'});
+  }
+});
+
 export const getPortfolioStats =
     asyncHandler(async (req: Request, res: Response) => {
       try {
