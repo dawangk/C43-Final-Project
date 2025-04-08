@@ -1,5 +1,6 @@
 import db from "../db/connectDb";
 import {ResponseType} from '../models/response';
+import { getPeriod } from "../utils/getPeriod";
 
 export class StockService {
   async getStocks(search: string): Promise<ResponseType> {
@@ -55,18 +56,7 @@ export class StockService {
   async getStockHistory(symbol: string, period: string): Promise<ResponseType> {
     try {
       
-      let interval: string = "1 week";
-      if (period === "5 years") {
-        interval = "5 years"
-      } else if (period === "1 year") {
-        interval = "1 year"
-      } else if (period === "quarter") {
-        interval = "3 months"
-      } else if (period === "month") {
-        interval = "1 month"
-      } else if (period === "week") {
-        interval = "1 week"
-      }
+      let interval: string = getPeriod(period);
       console.log(interval)
       const result = await db.query(
         `

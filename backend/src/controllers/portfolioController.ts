@@ -160,3 +160,22 @@ export const modifyFunds = asyncHandler(async (req: Request, res: Response) => {
     res.status(500).json({message: 'Internal Server Error'});
   }
 });
+
+export const getPortfolioStats =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const id = Number(req.params.id);
+        const user_id = (req as any).user.user_id;
+        const { period } = req.query;
+        const {data, error} =
+               await portfolioService.getPortfolioStats(user_id, id, period as string);
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error', error});
+      }
+    });

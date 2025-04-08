@@ -8,6 +8,7 @@ import db from '../db/connectDb';
 import {ResponseType} from '../models/response';
 
 import {StockListService} from './stockListService';
+import { getPeriod } from '../utils/getPeriod';
 
 const stockListService = new StockListService();
 
@@ -342,4 +343,132 @@ export class PortfolioService {
       };
     }
   }
+
+  async getPortfolioStats(user_id: number, port_id: number, period: string):
+    Promise<ResponseType> {
+  try {
+    if (!user_id || !port_id) {
+      return {error: {status: 400, message: 'Missing parameters.'}};
+    }
+
+    let interval: string = getPeriod(period);
+
+    // coeff of variance and beta
+    const result = await db.query(
+      `
+      WITH stocks_in_list AS (
+        SELECT symbol FROM StockOwned so 
+        JOIN StockList sl ON so.sl_id = sl.sl_id
+        JOIN Portfolio p ON sl.sl_id = p.sl_id
+        WHERE p.port_id = $1 AND p.user_id = $2
+      ),
+      latest_date AS (
+        SELECT MAX(timestamp) AS max_date FROM HistoricalStockPerformance
+      ),
+      daily_returns AS (
+        SELECT 
+          symbol,
+          timestamp,
+          (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
+          LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
+        FROM HistoricalStockPerformance
+        WHERE symbol IN (SELECT symbol FROM stocks_in_list)
+      ),
+      filtered_returns AS (
+        SELECT dr.*
+        FROM daily_returns dr
+        JOIN latest_date ld ON dr.timestamp >= ld.max_date - $3::INTERVAL
+      ),
+      market_returns AS (
+        SELECT 
+          timestamp,
+          AVG(daily_return) AS market_return
+        FROM filtered_returns
+        GROUP BY timestamp
+      ),
+      joined_returns AS (
+        SELECT 
+          f.symbol,
+          f.timestamp,
+          f.daily_return,
+          m.market_return
+        FROM filtered_returns f
+        JOIN market_returns m ON f.timestamp = m.timestamp
+      ),
+      cv_beta AS (
+        SELECT
+          symbol,
+          STDDEV(daily_return) / NULLIF(AVG(daily_return), 0) AS coefficient_of_variance,
+          COVAR_POP(daily_return, market_return) / VAR_POP(market_return) AS beta
+        FROM joined_returns
+        GROUP BY symbol
+      )
+      SELECT * FROM cv_beta;
+
+      `,
+      [port_id, user_id, interval]
+    )
+
+    // Covariance/correlation matrix
+    // Note: matix is in long-form: pairwise results per row
+    // Note 2: Only joins stock pairs with matching timestamps
+    const result_matrix = await db.query(
+      `
+      WITH stocks_in_list AS (
+        SELECT symbol FROM StockOwned so 
+        JOIN StockList sl ON so.sl_id = sl.sl_id
+        JOIN Portfolio p ON sl.sl_id = p.sl_id
+        WHERE p.port_id = $1 AND p.user_id = $2
+      ),
+      latest_date AS (
+        SELECT MAX(timestamp) AS max_date FROM HistoricalStockPerformance
+      ),
+      daily_returns AS (
+        SELECT 
+          symbol,
+          timestamp,
+          (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
+          LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
+        FROM HistoricalStockPerformance
+        WHERE symbol IN (SELECT symbol FROM stocks_in_list)
+      ),
+      filtered_returns AS (
+        SELECT dr.*
+        FROM daily_returns dr
+        JOIN latest_date ld ON dr.timestamp >= ld.max_date - $3::INTERVAL
+      ),
+      pairwise_returns AS (
+        SELECT 
+          a.symbol AS stock_a,
+          b.symbol AS stock_b,
+          a.daily_return AS return_a,
+          b.daily_return AS return_b
+        FROM filtered_returns a
+        JOIN filtered_returns b 
+          ON a.timestamp = b.timestamp AND a.symbol < b.symbol
+      )
+      SELECT 
+        stock_a,
+        stock_b,
+        COVAR_POP(return_a, return_b) AS covariance,
+        CORR(return_a, return_b) AS correlation
+      FROM pairwise_returns
+      GROUP BY stock_a, stock_b
+      ORDER BY stock_a, stock_b;
+
+      `,
+      [port_id, user_id, interval]
+    )
+
+    return {data: {coeff_and_beta: result.rows, matrix: result_matrix.rows}};
+
+  } catch (error: any) {
+    return {
+      error: {status: 500, message: error.message || 'internal server error'}
+    };
+  }
+  }
+
 }
+
+
