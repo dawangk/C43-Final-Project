@@ -1,25 +1,41 @@
-import express from 'express';
-import multer from 'multer';
+import express from "express";
+import multer from "multer";
 
-import {createPortfolio, deletePortfolio, getPortfolios, getPortfolioWithData, modifyFunds, updatePortfolio, uploadPortfolioData} from '../controllers/portfolioController';
-import {authHandler} from '../middleware/authHandler';
+import {
+  createPortfolio,
+  deletePortfolio,
+  getPortfolios,
+  getPortfolioWithData,
+  modifyFunds,
+  updatePortfolio,
+  uploadPortfolioData,
+  getPortfolioStats,
+  transferFunds
+} from "../controllers/portfolioController";
+import { authHandler } from "../middleware/authHandler";
 
-
-const upload = multer({dest: 'uploads/'});
+const upload = multer({ dest: "uploads/" });
 export const portfolioRouter = express.Router();
 
-portfolioRouter.post('/', authHandler, createPortfolio);
+portfolioRouter.post("/", authHandler, createPortfolio);
 
-portfolioRouter.get('/data/:id', authHandler, getPortfolioWithData);
-portfolioRouter.get('/data/', authHandler, getPortfolioWithData);
+portfolioRouter.get("/data/:id", authHandler, getPortfolioWithData);
+portfolioRouter.get("/data/", authHandler, getPortfolioWithData);
 
-portfolioRouter.get('/:id', authHandler, getPortfolios);
-portfolioRouter.get('/', authHandler, getPortfolios);
+portfolioRouter.get("/:id", authHandler, getPortfolios);
+portfolioRouter.get("/", authHandler, getPortfolios);
 
-portfolioRouter.put('/:id', authHandler, updatePortfolio);
-portfolioRouter.put('/modifyFund/:id', authHandler, modifyFunds);
+portfolioRouter.put("/:id", authHandler, updatePortfolio);
+portfolioRouter.put("/modifyFund/:id", authHandler, modifyFunds);
+portfolioRouter.post("/transfer", authHandler, transferFunds);
 
-portfolioRouter.delete('/:id', authHandler, deletePortfolio);
+portfolioRouter.delete("/:id", authHandler, deletePortfolio);
 
 portfolioRouter.post(
-    '/data/:id', authHandler, upload.single('file'), uploadPortfolioData);
+  "/data/:id",
+  authHandler,
+  upload.single("file"),
+  uploadPortfolioData
+);
+
+portfolioRouter.get("/stats/:id", authHandler, getPortfolioStats);
