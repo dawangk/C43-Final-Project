@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 
 import db from '../db/connectDb';
 import {ResponseType} from '../models/response';
+import {getPeriod} from '../utils/getPeriod';
 
 export class StockListService {
   async createStockList(user_id: number, name: string): Promise<ResponseType> {
@@ -56,7 +57,7 @@ export class StockListService {
     }
   }
 
-  
+
   async getStockListByIdWithData(user_id: number, sl_id: number):
       Promise<ResponseType> {
     try {
@@ -70,7 +71,7 @@ export class StockListService {
         return {error: {status: 404, message: 'stockList not found'}};
       }
       const stocksWithData = await db.query(
-        `SELECT 
+          `SELECT 
           so.*, 
           hsp_latest.*, 
           ROUND((((hsp_latest.close - hsp_latest.open) / hsp_latest.open) * 100)::NUMERIC, 2) AS performance_day,
@@ -90,10 +91,14 @@ export class StockListService {
           LIMIT 1
         ) hsp_past ON true
         WHERE so.sl_id = $1`,
-        [sl_id]);
+          [sl_id]);
 
       return {
-        data: {info: result.rows[0], count: stocksWithData.rowCount, list: stocksWithData.rows}
+        data: {
+          info: result.rows[0],
+          count: stocksWithData.rowCount,
+          list: stocksWithData.rows
+        }
       };
 
     } catch (error: any) {
@@ -124,7 +129,8 @@ export class StockListService {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
       const result = await db.query(
-          // -- performance of a stock list is calculated for 1d and YTD. Each stock is given equal weight, so we just find AVG performance.
+          // -- performance of a stock list is calculated for 1d and YTD. Each
+          // stock is given equal weight, so we just find AVG performance.
           `
           SELECT 
             sl.*,
@@ -157,7 +163,7 @@ export class StockListService {
           ) past ON true
           WHERE sl.user_id = $1
           GROUP BY sl.sl_id, sl.user_id
-          `, 
+          `,
           [user_id]);
       return {data: result.rows};
     } catch (error: any) {
@@ -276,6 +282,128 @@ export class StockListService {
         return {error: {status: 404, message: 'no stockLists found for user'}};
       }
       return {data: {message: 'Delete successful!', content: result.rows[0]}};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+
+  async getStockListStats(user_id: number, sl_id: number, period: string):
+      Promise<ResponseType> {
+    try {
+      if (!user_id || !sl_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+
+      let interval: string = getPeriod(period);
+
+      // coeff of variance and beta
+      const result = await db.query(
+          `
+      WITH stocks_in_list AS (
+        SELECT symbol FROM StockOwned so 
+        JOIN StockList sl ON so.sl_id = sl.sl_id
+        WHERE sl.sl_id = $1 AND sl.user_id = $2
+      ),
+      latest_date AS (
+        SELECT MAX(timestamp) AS max_date FROM HistoricalStockPerformance
+      ),
+      daily_returns AS (
+        SELECT 
+          symbol,
+          timestamp,
+          (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
+          LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
+        FROM HistoricalStockPerformance
+        WHERE symbol IN (SELECT symbol FROM stocks_in_list)
+      ),
+      filtered_returns AS (
+        SELECT dr.*
+        FROM daily_returns dr
+        JOIN latest_date ld ON dr.timestamp >= ld.max_date - $3::INTERVAL
+      ),
+      market_returns AS (
+        SELECT 
+          timestamp,
+          AVG(daily_return) AS market_return
+        FROM filtered_returns
+        GROUP BY timestamp
+      ),
+      joined_returns AS (
+        SELECT 
+          f.symbol,
+          f.timestamp,
+          f.daily_return,
+          m.market_return
+        FROM filtered_returns f
+        JOIN market_returns m ON f.timestamp = m.timestamp
+      ),
+      cv_beta AS (
+        SELECT
+          symbol,
+          STDDEV(daily_return) / NULLIF(AVG(daily_return), 0) AS coefficient_of_variance,
+          COVAR_POP(daily_return, market_return) / VAR_POP(market_return) AS beta
+        FROM joined_returns
+        GROUP BY symbol
+      )
+      SELECT * FROM cv_beta;
+
+      `,
+          [sl_id, user_id, interval])
+
+      // Covariance/correlation matrix
+      // Note: matix is in long-form: pairwise results per row
+      // Note 2: Only joins stock pairs with matching timestamps
+      const result_matrix = await db.query(
+          `
+      WITH stocks_in_list AS (
+        SELECT symbol FROM StockOwned so 
+        JOIN StockList sl ON so.sl_id = sl.sl_id
+        WHERE sl.sl_id = $1 AND sl.user_id = $2
+      ),
+      latest_date AS (
+        SELECT MAX(timestamp) AS max_date FROM HistoricalStockPerformance
+      ),
+      daily_returns AS (
+        SELECT 
+          symbol,
+          timestamp,
+          (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
+          LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
+        FROM HistoricalStockPerformance
+        WHERE symbol IN (SELECT symbol FROM stocks_in_list)
+      ),
+      filtered_returns AS (
+        SELECT dr.*
+        FROM daily_returns dr
+        JOIN latest_date ld ON dr.timestamp >= ld.max_date - $3::INTERVAL
+      ),
+      pairwise_returns AS (
+        SELECT 
+          a.symbol AS stock_a,
+          b.symbol AS stock_b,
+          a.daily_return AS return_a,
+          b.daily_return AS return_b
+        FROM filtered_returns a
+        JOIN filtered_returns b 
+          ON a.timestamp = b.timestamp AND a.symbol < b.symbol
+      )
+      SELECT 
+        stock_a,
+        stock_b,
+        COVAR_POP(return_a, return_b) AS covariance,
+        CORR(return_a, return_b) AS correlation
+      FROM pairwise_returns
+      GROUP BY stock_a, stock_b
+      ORDER BY stock_a, stock_b;
+
+      `,
+          [sl_id, user_id, interval])
+
+      return {data: {coeff_and_beta: result.rows, matrix: result_matrix.rows}};
+
     } catch (error: any) {
       return {
         error: {status: 500, message: error.message || 'internal server error'}
