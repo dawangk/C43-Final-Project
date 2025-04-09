@@ -136,5 +136,19 @@ CREATE INDEX idx_symbol_timestamp_desc ON HistoricalStockPerformance(symbol, tim
 -- Supports year-ago lookups (especially for large spans)
 CREATE INDEX idx_symbol_timestamp ON HistoricalStockPerformance(symbol, timestamp);
 
+CREATE INDEX idx_symbol_recorded_desc ON RecordedStockPerformance(port_id, symbol, timestamp DESC);
+CREATE INDEX idx_symbol_recorded ON RecordedStockPerformance(port_id, symbol, timestamp);
 
 INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;
+-- cache costly stock prediction calculations by (symbol, interval)
+CREATE TABLE stock_predictions_cache (
+	id SERIAL PRIMARY KEY,
+	symbol VARCHAR(5) NOT NULL,
+	interval TEXT NOT NULL,
+	created_at DATE DEFAULT CURRENT_TIMESTAMP,
+	prediction JSONB NOT NULL,
+	UNIQUE(symbol, interval)
+);
+
+
+alter table friendrequest alter column status set default 'pending';
