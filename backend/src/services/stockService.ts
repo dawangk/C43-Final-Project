@@ -84,10 +84,20 @@ export class StockService {
       } else {
         result = await db.query(
           `
-            WITH CombinedStockPerformance AS (
+            WITH latest_date AS (
+                  SELECT timestamp 
+                  FROM HistoricalStockPerformance 
+                  WHERE symbol = $1
+                  ORDER BY timestamp DESC 
+                  LIMIT 1
+            ),
+            CombinedStockPerformance AS (
                   (SELECT * FROM HistoricalStockPerformance) 
                     UNION ALL
-                  (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $3)
+                  (SELECT symbol, rsp.timestamp, open, high, low, close, volume 
+                  FROM RecordedStockPerformance rsp
+                  JOIN latest_date ON rsp.timestamp > latest_date.timestamp
+                  WHERE port_id = $3 )
             )
             SELECT *
             FROM CombinedStockPerformance
@@ -114,7 +124,7 @@ export class StockService {
     }
   }
 
-  async getStockPrediction(symbol: string, period: string): Promise<ResponseType> {
+  async getStockPrediction(symbol: string, period: string, port_id?: number): Promise<ResponseType> {
     try {
       if (period === "clear") {
         return { data: [] }
@@ -122,20 +132,56 @@ export class StockService {
       const interval = getPeriod(period);
   
       // try to get prediction from cache
-      const cacheResult = await db.query(
-        `SELECT prediction FROM stock_predictions_cache WHERE symbol = $1 AND interval = $2`,
-        [symbol, interval]
-      );
+      let cacheResult;
+      if (!port_id) {
+        cacheResult = await db.query(
+          `SELECT prediction FROM stock_predictions_cache WHERE symbol = $1 AND interval = $2 AND port_id IS NULL`,
+          [symbol, interval]
+        );
+      }
+      else {
+        cacheResult = await db.query(
+          `SELECT prediction FROM stock_predictions_cache WHERE symbol = $1 AND interval = $2 AND port_id = $3`,
+          [symbol, interval, port_id]
+        );
+      }
   
       if (cacheResult.rows.length > 0) {
         return { data: cacheResult.rows[0].prediction };
       }
-  
+      
+      let result;
       // Get stock info to predict with
-      const result = await db.query(
-        `SELECT timestamp, close FROM HistoricalStockPerformance WHERE symbol = $1 ORDER BY timestamp`,
-        [symbol]
-      );
+      if (!port_id) {
+        result = await db.query(
+          `SELECT timestamp, close FROM HistoricalStockPerformance WHERE symbol = $1 ORDER BY timestamp`,
+          [symbol]
+        );
+      }
+      else {
+        result = await db.query(
+          `
+            WITH latest_date AS (
+                  SELECT timestamp 
+                  FROM HistoricalStockPerformance 
+                  WHERE symbol = $1
+                  ORDER BY timestamp DESC 
+                  LIMIT 1
+            ),
+            CombinedStockPerformance AS (
+                  (SELECT * FROM HistoricalStockPerformance) 
+                    UNION ALL
+                  (SELECT symbol, rsp.timestamp, open, high, low, close, volume 
+                  FROM RecordedStockPerformance rsp
+                  JOIN latest_date ON rsp.timestamp > latest_date.timestamp
+                  WHERE port_id = $2 )
+            )
+            SELECT timestamp, close FROM CombinedStockPerformance 
+            WHERE symbol = $1 ORDER BY timestamp
+          `,
+          [symbol, port_id]
+        );
+      }
   
       const rows = result.rows;
       if (!rows.length) {
@@ -149,8 +195,8 @@ export class StockService {
 
       const timeout = setTimeout(() => {
         pyProcess.kill('SIGKILL');
-        throw new Error('Prediction script timed out');
-      }, 10000); // 10s timeout
+        console.error("Prediction timed out");
+      }, 20000); // 20s timeout
       
       pyProcess.on('close', code => {
         clearTimeout(timeout);
@@ -184,14 +230,25 @@ export class StockService {
         price_lower: p.yhat_lower,
         price_upper: p.yhat_upper,
       }));
-      // Step 3: Insert into cache
-      await db.query(
-        `INSERT INTO stock_predictions_cache (symbol, interval, prediction)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (symbol, interval) DO UPDATE
-         SET prediction = EXCLUDED.prediction, created_at = CURRENT_TIMESTAMP`,
-        [symbol, interval, JSON.stringify(finalData)]
-      );
+      //  Insert into cache
+      if (!port_id) {
+        await db.query(
+          `INSERT INTO stock_predictions_cache (symbol, interval, prediction)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (symbol, interval, port_id) DO UPDATE
+          SET prediction = EXCLUDED.prediction, created_at = CURRENT_TIMESTAMP`,
+          [symbol, interval, JSON.stringify(finalData)]
+        );
+      }
+      else {
+        await db.query(
+          `INSERT INTO stock_predictions_cache (symbol, interval, port_id, prediction)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (symbol, interval, port_id) DO UPDATE
+          SET prediction = EXCLUDED.prediction, created_at = CURRENT_TIMESTAMP`,
+          [symbol, interval, port_id, JSON.stringify(finalData)]
+        );
+      }
 
 
   

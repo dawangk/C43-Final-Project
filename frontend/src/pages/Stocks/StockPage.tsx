@@ -37,11 +37,11 @@ export const StockPage = () => {
   })
 
   const getPredictionQuery = useQuery({
-    queryKey: ['stock-prediction', symbol, predictPeriod],
+    queryKey: ['stock-prediction', symbol, predictPeriod, id],
     queryFn: async () => {
       if (symbol && predictPeriod && apply) {
         setApply(false);
-        return getStockPrediction(symbol, predictPeriod);
+        return getStockPrediction(symbol, predictPeriod, id);
       }
       return {data: []}
     },

@@ -61,8 +61,8 @@ export const getStockHistory = async (symbol: string, period: string, id?: strin
 }
 
 // Gets prediction of a stock 
-export const getStockPrediction = async (symbol: string, period: string) => {
-  const res = await fetch(`${SERVER_URL}/api/stock/prediction/${symbol}?period=${period}`, {
+export const getStockPrediction = async (symbol: string, period: string, id?: string) => {
+  const res = await fetch(`${SERVER_URL}/api/stock/prediction/${symbol}/${id ?? ""}?period=${period}`, {
     method: "GET",headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",

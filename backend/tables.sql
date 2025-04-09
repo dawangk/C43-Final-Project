@@ -139,12 +139,13 @@ CREATE INDEX idx_symbol_timestamp ON HistoricalStockPerformance(symbol, timestam
 
 INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;
 
--- cache costly stock prediction calculations by (symbol, interval)
+-- cache costly stock prediction calculations by (symbol, interval, port_id)
 CREATE TABLE stock_predictions_cache (
 	id SERIAL PRIMARY KEY,
 	symbol VARCHAR(5) NOT NULL,
 	interval TEXT NOT NULL,
+	port_id INT DEFAULT NULL,
 	created_at DATE DEFAULT CURRENT_TIMESTAMP,
 	prediction JSONB NOT NULL,
-	UNIQUE(symbol, interval)
+	UNIQUE(symbol, interval, port_id)
 );

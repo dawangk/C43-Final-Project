@@ -66,8 +66,11 @@ export const getStockPrediction =
     asyncHandler(async (req: Request, res: Response) => {
       try {
         const symbol = req.params.symbol;
+
+        const id = req.params.id ? Number(req.params.id) : undefined;
+
         const { period } = req.query;
-        const {data, error} = await stockService.getStockPrediction(symbol, period as string);
+        const {data, error} = await stockService.getStockPrediction(symbol, period as string, id);
 
         if (error) {
           res.status(error.status).json({message: error.message});
