@@ -102,13 +102,13 @@ export const ViewPortfolioPage = () => {
 
         await modifyFundsMutation.mutateAsync({
           body: {
-            amount: -getStockInfoQuery.data?.close * amount
+            amount: (-getStockInfoQuery.data?.close * amount).toFixed(2)
           }, 
           id: id
         });
 
         toast({
-          description: `Bought ${amount} shares of ${symbol} for $${getStockInfoQuery.data?.close * amount}.`
+          description: `Bought ${amount} shares of ${symbol} for $${(getStockInfoQuery.data?.close * amount).toFixed(2)}.`
         })
       }
       else {
