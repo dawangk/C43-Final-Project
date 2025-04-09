@@ -6,5 +6,6 @@ export const stockRouter = express.Router();
 
 stockRouter.get('/', authHandler, getStocks);
 stockRouter.get('/history/:symbol', authHandler, getStockHistory);
+stockRouter.get('/history/:symbol/:id', authHandler, getStockHistory);
 stockRouter.get('/prediction/:symbol', authHandler, getStockPrediction);
 stockRouter.get('/:symbol', authHandler, getStock);

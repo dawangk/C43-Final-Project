@@ -57,27 +57,53 @@ export class StockService {
 
   
   // Get historical information on a given stock for a given time period (week, month, quarter, year, 5 years)
-  async getStockHistory(symbol: string, period: string): Promise<ResponseType> {
+  async getStockHistory(symbol: string, period: string, port_id?: number): Promise<ResponseType> {
     try {
       
       let interval: string = getPeriod(period);
       console.log(interval)
-      const result = await db.query(
-        `
-          SELECT *
-          FROM HistoricalStockPerformance
-          WHERE symbol = $1
-            AND timestamp >= (
-                SELECT timestamp 
-                FROM HistoricalStockPerformance 
-                WHERE symbol = $1
-                ORDER BY timestamp DESC 
-                LIMIT 1
-              ) - CAST($2 AS INTERVAL)
-          ORDER BY timestamp;
-        `,
-        [symbol, interval]
-      );
+      console.log("Port: ", port_id)
+      let result;
+      if (!port_id) {
+        result = await db.query(
+          `
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = $1
+              AND timestamp >= (
+                  SELECT timestamp 
+                  FROM HistoricalStockPerformance 
+                  WHERE symbol = $1
+                  ORDER BY timestamp DESC 
+                  LIMIT 1
+                ) - CAST($2 AS INTERVAL)
+            ORDER BY timestamp;
+          `,
+          [symbol, interval]
+        );
+      } else {
+        result = await db.query(
+          `
+            WITH CombinedStockPerformance AS (
+                  (SELECT * FROM HistoricalStockPerformance) 
+                    UNION ALL
+                  (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $3)
+            )
+            SELECT *
+            FROM CombinedStockPerformance
+            WHERE symbol = $1
+              AND timestamp >= (
+                  SELECT timestamp 
+                  FROM CombinedStockPerformance 
+                  WHERE symbol = $1
+                  ORDER BY timestamp DESC 
+                  LIMIT 1
+                ) - CAST($2 AS INTERVAL)
+            ORDER BY timestamp;
+          `,
+          [symbol, interval, port_id]
+        );
+      }
       return {
         data: result.rows
       };

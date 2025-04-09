@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { StockPredictionDialog } from "./StockPredictionDialog";
 
 export const StockPage = () => {
-  const { symbol } = useParams();
+  const { symbol, id } = useParams();
   const [period, setPeriod] = useState("month");
   const [predictPeriod, setPredictPeriod] = useState<string>();
   const [dates, setDates] = useState<string[]>([]);
@@ -32,7 +32,7 @@ export const StockPage = () => {
 
   const getStockHistoryQuery = useQuery({
     queryKey: ['stock', symbol, period],
-    queryFn: () => getStockHistory(symbol as string, period),
+    queryFn: () => getStockHistory(symbol as string, period, id),
     enabled: !!(symbol && symbol.length > 0)
   })
 

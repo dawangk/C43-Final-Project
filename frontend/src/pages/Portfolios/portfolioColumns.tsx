@@ -280,7 +280,7 @@ export const getViewPortfolioColumns = (
     header: "Ticker",
     cell: ({ row }) => {
       const symbol: string = row.getValue("symbol")
-      return <Link to={`/dashboard/stock/${symbol}`} className="cursor-pointer hover:text-orange-600 underline">{symbol}</Link>
+      return <Link to={`/dashboard/stock/${symbol}/${port_id}`} className="cursor-pointer hover:text-orange-600 underline">{symbol}</Link>
     }
   },
   {
