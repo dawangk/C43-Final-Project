@@ -31,7 +31,7 @@ export const StockPage = () => {
   const navigate = useNavigate();
 
   const getStockHistoryQuery = useQuery({
-    queryKey: ['stock', symbol, period],
+    queryKey: !id ? ['stock', symbol, period] : ['stock', symbol, period, id],
     queryFn: () => getStockHistory(symbol as string, period, id),
     enabled: !!(symbol && symbol.length > 0)
   })
