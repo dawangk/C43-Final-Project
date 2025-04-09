@@ -16,8 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label";
-import { StockPredictionDialog } from "./StockpredictionDialog";
 import { Button } from "@/components/ui/button";
+import { StockPredictionDialog } from "./StockPredictionDialog";
 
 export const StockPage = () => {
   const { symbol } = useParams();
@@ -65,10 +65,10 @@ export const StockPage = () => {
       if (getPredictionQuery.data) {
         const predictionDates = (getPredictionQuery.data ?? []).map((d: any) => d?.timestamp.slice(0, 10));
         const predictionValues: CandlestickData[] = (getPredictionQuery.data ?? []).map((d: any) => ([
-          d?.price,
-          (d?.price as number) * 1.005,
-          (d?.price as number) * 1.001,
-          (d?.price as number) * 0.995,
+          Math.round(d?.price as number * 100) / 100,
+          Math.round((d?.price as number) * 1.005 * 100) / 100,
+          Math.round((d?.price as number) * 1.001 * 100) / 100,
+          Math.round((d?.price as number) * 0.995 * 100) / 100,
         ]));
         sampleDates.push(...predictionDates);
         sampleValues.push(...predictionValues)
