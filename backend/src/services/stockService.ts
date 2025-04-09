@@ -90,6 +90,9 @@ export class StockService {
 
   async getStockPrediction(symbol: string, period: string): Promise<ResponseType> {
     try {
+      if (period === "clear") {
+        return { data: [] }
+      }
       const interval = getPeriod(period);
   
       // try to get prediction from cache
@@ -149,22 +152,22 @@ export class StockService {
         });
       });
 
-  
-      // Step 3: Insert into cache
-      await db.query(
-        `INSERT INTO stock_predictions_cache (symbol, interval, prediction)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (symbol, interval) DO UPDATE
-         SET prediction = EXCLUDED.prediction, created_at = CURRENT_TIMESTAMP`,
-        [symbol, interval, JSON.stringify(predictionData)]
-      );
-
       const finalData = predictionData.map((p: any) => ({
         timestamp: new Date(p.ds).toISOString(),
         price: p.yhat,
         price_lower: p.yhat_lower,
         price_upper: p.yhat_upper,
       }));
+      // Step 3: Insert into cache
+      await db.query(
+        `INSERT INTO stock_predictions_cache (symbol, interval, prediction)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (symbol, interval) DO UPDATE
+         SET prediction = EXCLUDED.prediction, created_at = CURRENT_TIMESTAMP`,
+        [symbol, interval, JSON.stringify(finalData)]
+      );
+
+
   
       return { data: finalData };
   

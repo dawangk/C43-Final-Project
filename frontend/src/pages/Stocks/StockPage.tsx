@@ -1,9 +1,9 @@
-import { getStock, getStockHistory } from "@/api/stockApiSlice";
+import { getStock, getStockHistory, getStockPrediction } from "@/api/stockApiSlice";
 import CandlestickChart from "@/components/candlestick-chart";
 import { Spinner } from "@/components/ui/spinner";
 import { CandlestickData } from "@/models/graph-models";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Wand } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -16,12 +16,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label";
+import { StockPredictionDialog } from "./StockpredictionDialog";
+import { Button } from "@/components/ui/button";
 
 export const StockPage = () => {
   const { symbol } = useParams();
   const [period, setPeriod] = useState("month");
+  const [predictPeriod, setPredictPeriod] = useState<string>();
   const [dates, setDates] = useState<string[]>([]);
   const [values, setValues] = useState<CandlestickData[]>([]);
+  const [predictionOpen, setPredictionOpen] = useState(false);
+  const [apply, setApply] = useState(false);
 
   const navigate = useNavigate();
 
@@ -30,6 +35,22 @@ export const StockPage = () => {
     queryFn: () => getStockHistory(symbol as string, period),
     enabled: !!(symbol && symbol.length > 0)
   })
+
+  const getPredictionQuery = useQuery({
+    queryKey: ['stock-prediction', symbol, predictPeriod],
+    queryFn: async () => {
+      if (symbol && predictPeriod && apply) {
+        setApply(false);
+        return getStockPrediction(symbol, predictPeriod);
+      }
+      return {data: []}
+    },
+    enabled: !!(symbol && predictPeriod && apply)
+  })
+
+  const handleApplyPrediction = () => {
+    setApply(true);
+  }
 
   useEffect(() => {
     if (getStockHistoryQuery.data) {
@@ -40,10 +61,23 @@ export const StockPage = () => {
         d?.low,
         d?.high,
       ]));
+
+      if (getPredictionQuery.data) {
+        const predictionDates = (getPredictionQuery.data ?? []).map((d: any) => d?.timestamp.slice(0, 10));
+        const predictionValues: CandlestickData[] = (getPredictionQuery.data ?? []).map((d: any) => ([
+          d?.price,
+          (d?.price as number) * 1.005,
+          (d?.price as number) * 1.001,
+          (d?.price as number) * 0.995,
+        ]));
+        sampleDates.push(...predictionDates);
+        sampleValues.push(...predictionValues)
+      }
+
       setDates(sampleDates);
       setValues(sampleValues);
     }
-  }, [getStockHistoryQuery.data])
+  }, [getStockHistoryQuery.data, getPredictionQuery.data])
 
 
 
@@ -53,6 +87,9 @@ export const StockPage = () => {
         <div className="flex items-center justify-between gap-4">
           <ChevronLeft className="cursor-pointer" onClick={() => navigate(-1)}/>
           <h1 className="text-xl">Viewing Stock: {symbol ?? ""}</h1>
+        </div>
+        <div className="flex gap-4">
+          <Button onClick={() => setPredictionOpen(true)}> <Wand />Predict</Button>
         </div>
       </div>
       <div className="w-full items-end">
@@ -72,8 +109,17 @@ export const StockPage = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
+
+        {symbol && (<StockPredictionDialog 
+          symbol={symbol}
+          period={predictPeriod}
+          setPeriod={setPredictPeriod}
+          open={predictionOpen}
+          setOpen={setPredictionOpen}
+          applyPrediction={handleApplyPrediction}
+        />)}
       </div>
-      {getStockHistoryQuery.isLoading ? (
+      {(getStockHistoryQuery.isLoading || getPredictionQuery.isLoading) ? (
         <Spinner/>
       ) : (
         <CandlestickChart title={`${symbol} - ${period}`} dates={dates} values={values} />
