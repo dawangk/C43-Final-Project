@@ -43,9 +43,34 @@ export const getStockHistory =
     asyncHandler(async (req: Request, res: Response) => {
       try {
         const symbol = req.params.symbol;
+        
+        const id = req.params.id ? Number(req.params.id) : undefined;
+
         const { period } = req.query;
+        
         console.log("Period:", period)
-        const {data, error} = await stockService.getStockHistory(symbol, period as string);
+        const {data, error} = await stockService.getStockHistory(symbol, period as string, id);
+
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error'});
+      }
+    });
+
+export const getStockPrediction =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const symbol = req.params.symbol;
+
+        const id = req.params.id ? Number(req.params.id) : undefined;
+
+        const { period } = req.query;
+        const {data, error} = await stockService.getStockPrediction(symbol, period as string, id);
 
         if (error) {
           res.status(error.status).json({message: error.message});

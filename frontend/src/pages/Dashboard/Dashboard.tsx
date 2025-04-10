@@ -66,6 +66,7 @@ export const Dashboard = () => {
                     <Route path="/portfolios" element={<PortfoliosPage/>} />
                     <Route path="/portfolios/:id" element={<ViewPortfolioPage />} />
                     <Route path="stock/:symbol" element={<StockPage />}/>
+                    <Route path="stock/:symbol/:id" element={<StockPage />}/>
                   </Routes>
                 </div>
               </SidebarInset>
