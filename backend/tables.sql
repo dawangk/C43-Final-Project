@@ -166,6 +166,7 @@ CREATE TABLE stock_predictions_cache (
 );
 
 alter table friendrequest alter column status set default 'pending';
+
 alter table friendrequest add column updated_at timestamp default now();
 
 create table deletedFriends (
@@ -176,3 +177,5 @@ create table deletedFriends (
 	FOREIGN KEY(user2_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 	CHECK (user1_id < user2_id)
 );
+
+alter table share add primary key (sl_id, user_id);

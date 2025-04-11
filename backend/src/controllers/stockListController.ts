@@ -36,13 +36,25 @@ export const getStockLists =
       try {
         const id = Number(req.params.id);
         const user_id = (req as any).user.user_id;
+        const {type} = req.body;
         let data, error;
         console.log(id);
         if (id) {
           ({data, error} =
                await stockListService.getStockListById(user_id, id));
         } else {
-          ({data, error} = await stockListService.getStockLists(user_id));
+          switch (type) {
+            case 'shared':
+              ({data, error} =
+                   await stockListService.getSharedStockLists(user_id));
+              break;
+            case 'public':
+              ({data, error} = await stockListService.getPublicStockLists());
+              break;
+            default:
+              ({data, error} = await stockListService.getStockLists(user_id));
+              break;
+          }
         }
         if (error) {
           res.status(error.status).json({message: error.message});
@@ -61,12 +73,28 @@ export const getStockListsWithData =
         const id = Number(req.params.id);
         const user_id = (req as any).user.user_id
         let data, error;
+        let {type} = req.body;
+        if (!type) {
+          type = 'owned';
+        }
         if (id) {
           ({data, error} =
                await stockListService.getStockListByIdWithData(user_id, id));
         } else {
-          ({data, error} =
-               await stockListService.getStockListsWithData(user_id));
+          switch (type) {
+            case 'shared':
+              ({data, error} =
+                   await stockListService.getSharedStockListsWithData(user_id));
+              break;
+            case 'public':
+              ({data, error} =
+                   await stockListService.getPublicStockListsWithData());
+              break;
+            default:
+              ({data, error} =
+                   await stockListService.getStockListsWithData(user_id));
+              break;
+          }
         }
         if (error) {
           res.status(error.status).json({message: error.message});
@@ -88,6 +116,25 @@ export const updateStockList =
 
         const {data, error} =
             await stockListService.updateStockList(user_id, id, name);
+
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error'});
+      }
+    });
+
+export const updateStockListVisibility =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const id = Number(req.params.id);
+        const user_id = (req as any).user.user_id;
+        const {data, error} =
+            await stockListService.updateStockListVisibility(user_id, id);
 
         if (error) {
           res.status(error.status).json({message: error.message});
