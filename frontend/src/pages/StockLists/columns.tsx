@@ -372,7 +372,7 @@ export const sharedStockListColumns: ColumnDef<StockList>[] = [
  
       return (
         <div className="flex gap-2 justify-end items-center">
-          <Link to={`/dashboard/stock-lists/shared/${stockList.user_id}/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
+          <Link to={`/dashboard/shared/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
         </div>
       )
     },
