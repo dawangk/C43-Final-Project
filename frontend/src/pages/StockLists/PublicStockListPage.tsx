@@ -11,7 +11,7 @@ export const PublicStockListPage = () => {
   const queryClient = useQueryClient()
 
   const getPublicStockListsQuery = useQuery({
-    queryKey: ["stock-lists"],
+    queryKey: ["public-stock-lists"],
     queryFn: getPublicStockListsWithData
   })
   const {toast} = useToast();
