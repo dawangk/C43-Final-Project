@@ -524,16 +524,18 @@ export const coeff_and_beta_columns: ColumnDef<StockStats>[] = [
     accessorKey: "coefficient_of_variance",
     header: "Coeff. of Variance",
     cell: ({ row }) => {
-      const val: number = row.getValue("coefficient_of_variance")
-      return <div>{val.toFixed(4)}</div>
+      const val: number = row.getValue("coefficient_of_variance");
+      console.log(val);
+      return <div>{val?.toFixed(4)}</div>
     }
   },
   {
     accessorKey: "beta",
     header: "Beta",
     cell: ({ row }) => {
-      const val: number = row.getValue("beta")
-      return <div>{val.toFixed(4)}</div>
+      const val: number = row.getValue("beta");
+      console.log(val);
+      return <div>{val?.toFixed(4)}</div>
     }
   },
 ]

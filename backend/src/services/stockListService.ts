@@ -97,17 +97,35 @@ export class StockListService {
           WITH CombinedStockPerformance AS (
             SELECT DISTINCT ON (symbol, timestamp) *
             FROM (
-              SELECT rsp.symbol, rsp.timestamp, rsp.open, rsp.high, rsp.low, rsp.close, rsp.volume 
+              SELECT 
+                rsp.symbol, 
+                rsp.timestamp, 
+                rsp.open, 
+                rsp.high, 
+                rsp.low, 
+                rsp.close, 
+                rsp.volume,
+                1 as priority 
               FROM RecordedStockPerformance rsp
               JOIN StockOwned so ON rsp.symbol = so.symbol
               WHERE rsp.port_id = $2 AND so.sl_id = $1
+              
               UNION ALL
-              SELECT hsp.* 
+              
+              SELECT 
+                hsp.symbol, 
+                hsp.timestamp, 
+                hsp.open, 
+                hsp.high, 
+                hsp.low, 
+                hsp.close, 
+                hsp.volume,
+                2 as priority  
               FROM HistoricalStockPerformance hsp
               JOIN StockOwned so ON hsp.symbol = so.symbol
               WHERE so.sl_id = $1
             ) combined
-            ORDER BY symbol, timestamp DESC NULLS LAST
+            ORDER BY symbol, timestamp DESC NULLS LAST, priority
           )
           SELECT 
           so.*, 
@@ -534,17 +552,35 @@ export class StockListService {
       WITH CombinedStockPerformance AS (
         SELECT DISTINCT ON (symbol, timestamp) *
         FROM (
-          SELECT rsp.symbol, rsp.timestamp, rsp.open, rsp.high, rsp.low, rsp.close, rsp.volume 
+          SELECT 
+            rsp.symbol, 
+            rsp.timestamp, 
+            rsp.open, 
+            rsp.high, 
+            rsp.low, 
+            rsp.close, 
+            rsp.volume,
+            1 as priority 
           FROM RecordedStockPerformance rsp
           JOIN StockOwned so ON rsp.symbol = so.symbol
           WHERE rsp.port_id = $3 AND so.sl_id = $1
+          
           UNION ALL
-          SELECT hsp.* 
+          
+          SELECT 
+            hsp.symbol, 
+            hsp.timestamp, 
+            hsp.open, 
+            hsp.high, 
+            hsp.low, 
+            hsp.close, 
+            hsp.volume,
+            2 as priority  
           FROM HistoricalStockPerformance hsp
           JOIN StockOwned so ON hsp.symbol = so.symbol
           WHERE so.sl_id = $1
         ) combined
-        ORDER BY symbol, timestamp DESC NULLS LAST
+        ORDER BY symbol, timestamp DESC NULLS LAST, priority
       ),
       stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
@@ -605,17 +641,35 @@ export class StockListService {
       WITH CombinedStockPerformance AS (
         SELECT DISTINCT ON (symbol, timestamp) *
         FROM (
-          SELECT rsp.symbol, rsp.timestamp, rsp.open, rsp.high, rsp.low, rsp.close, rsp.volume 
+          SELECT 
+            rsp.symbol, 
+            rsp.timestamp, 
+            rsp.open, 
+            rsp.high, 
+            rsp.low, 
+            rsp.close, 
+            rsp.volume,
+            1 as priority 
           FROM RecordedStockPerformance rsp
           JOIN StockOwned so ON rsp.symbol = so.symbol
           WHERE rsp.port_id = $3 AND so.sl_id = $1
+          
           UNION ALL
-          SELECT hsp.* 
+          
+          SELECT 
+            hsp.symbol, 
+            hsp.timestamp, 
+            hsp.open, 
+            hsp.high, 
+            hsp.low, 
+            hsp.close, 
+            hsp.volume,
+            2 as priority  
           FROM HistoricalStockPerformance hsp
           JOIN StockOwned so ON hsp.symbol = so.symbol
           WHERE so.sl_id = $1
         ) combined
-        ORDER BY symbol, timestamp DESC NULLS LAST
+        ORDER BY symbol, timestamp DESC NULLS LAST, priority
       ),
       stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
