@@ -25,8 +25,7 @@ export const getStocks = asyncHandler(async (req: Request, res: Response) => {
 export const getStock = asyncHandler(async (req: Request, res: Response) => {
   try {
     const symbol = req.params.symbol;
-    const port_id = req.body.port_id;
-    const {data, error} = await stockService.getStock(symbol, port_id);
+    const {data, error} = await stockService.getStock(symbol);
 
     if (error) {
       res.status(error.status).json({message: error.message});
@@ -41,21 +40,79 @@ export const getStock = asyncHandler(async (req: Request, res: Response) => {
 
 export const getStockHistory =
     asyncHandler(async (req: Request, res: Response) => {
-      try {
-        const symbol = req.params.symbol;
-        const {period} = req.query;
-        const port_id = req.body.port_id;
-        console.log('Period:', period)
-        const {data, error} = await stockService.getStockHistory(
-            symbol, period as string, port_id);
+  try {
+    const symbol = req.params.symbol;
 
-        if (error) {
-          res.status(error.status).json({message: error.message});
-          return;
-        }
 
-        res.status(200).json(data);
-      } catch (error) {
-        res.status(500).json({message: 'Internal Server Error'});
-      }
-    });
+    const id = req.params.id ? Number(req.params.id) : undefined;
+
+    const {period} = req.query;
+
+    console.log('Period:', period)
+    const {data, error} =
+        await stockService.getStockHistory(symbol, period as string, id);
+
+    if (error) {
+      res.status(error.status).json({message: error.message});
+      return;
+    }
+
+    export const getStocks =
+        asyncHandler(async (req: Request, res: Response) => {
+          try {
+            const {search} = req.query;
+            console.log(search)
+            const {data, error} =
+                await stockService.getStocks(search as string);
+
+            if (error) {
+              res.status(error.status).json({message: error.message});
+              return;
+            }
+
+            res.status(200).json(data);
+          } catch (error) {
+            res.status(500).json({message: 'Internal Server Error'});
+          }
+        });
+
+    export const getStock =
+        asyncHandler(async (req: Request, res: Response) => {
+          try {
+            const symbol = req.params.symbol;
+            const port_id = req.body.port_id;
+            const {data, error} = await stockService.getStock(symbol, port_id);
+
+            if (error) {
+              res.status(error.status).json({message: error.message});
+              return;
+            }
+
+            res.status(200).json(data);
+          } catch (error) {
+            res.status(500).json({message: 'Internal Server Error'});
+          }
+        });
+
+    export const getStockPrediction =
+        asyncHandler(async (req: Request, res: Response) => {
+          try {
+            const symbol = req.params.symbol;
+
+            const id = req.params.id ? Number(req.params.id) : undefined;
+
+            const {period} = req.query;
+            const {data, error} = await stockService.getStockPrediction(
+                symbol, period as string, id);
+
+
+            if (error) {
+              res.status(error.status).json({message: error.message});
+              return;
+            }
+
+            res.status(200).json(data);
+          } catch (error) {
+            res.status(500).json({message: 'Internal Server Error'});
+          }
+        });

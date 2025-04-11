@@ -6,10 +6,13 @@ import {Server} from 'http';
 
 import db from './db/connectDb';
 import asyncHandler from './middleware/asyncHandler';
+import {friendRouter} from './routes/friendRoutes';
 import {portfolioRouter} from './routes/portfolioRoutes';
+import {shareRouter} from './routes/shareRoutes';
 import {stockListRouter} from './routes/stockListRoutes';
 import {stockRouter} from './routes/stockRoutes';
 import {authRouter} from './routes/userRoutes';
+import { reviewRouter } from './routes/reviewRoutes';
 
 const app: Express = express();
 const HOST = 'localhost';
@@ -24,8 +27,10 @@ app.use(express.urlencoded({extended: true}));
 app.use('/api/stock', stockRouter);
 app.use('/api/stocklist', stockListRouter);
 app.use('/api/portfolio', portfolioRouter);
+app.use('/api/review', reviewRouter);
 app.use('/auth', authRouter);
-
+app.use('/friend', friendRouter);
+app.use('/share', shareRouter);
 
 /**
  * Root route to test the backend server.
