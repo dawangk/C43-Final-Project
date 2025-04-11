@@ -72,11 +72,11 @@ export const deleteReview =
         let data, error;
         if(!reviewer_id) {
           ({data, error} =
-              await reviewService.deleteReview(user_id, Number(sl_id)));
+              await reviewService.deleteMyReview(user_id, Number(sl_id)));
         }
         else {
           ({data, error} =
-            await reviewService.deleteReview(Number(reviewer_id), Number(sl_id)));
+            await reviewService.deleteReview(Number(reviewer_id), Number(sl_id), user_id));
         }
 
         if (error) {
