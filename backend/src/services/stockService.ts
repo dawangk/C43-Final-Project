@@ -27,14 +27,18 @@ export class StockService {
         const result = await db.query(
             `
           WITH CombinedStockPerformance AS (
-            (SELECT * FROM HistoricalStockPerformance) 
-              UNION 
-            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2)
+            SELECT DISTINCT ON (symbol, timestamp) *
+            FROM (
+              SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2 AND 
+              WHERE symbol = $1
+              UNION ALL
+              SELECT * FROM HistoricalStockPerformance WHERE symbol = $1
+            ) combined
+            ORDER BY symbol, timestamp DESC NULLS LAST
           )
           SELECT symbol, timestamp, open, high, low, close, volume,
                 ROUND((((close - open) / open) * 100)::NUMERIC, 2) AS performance_day
           FROM CombinedStockPerformance
-          WHERE symbol = $1
           ORDER BY timestamp DESC
           LIMIT 1`,
             [symbol, port_id]);
@@ -117,14 +121,15 @@ export class StockService {
                   ORDER BY timestamp DESC 
                   LIMIT 1
             ),
-            CombinedStockPerformance AS (
-                  (SELECT * FROM HistoricalStockPerformance) 
-                    UNION ALL
-                  (SELECT symbol, rsp.timestamp, open, high, low, close, volume 
-                  FROM RecordedStockPerformance rsp
-                  JOIN latest_date ON rsp.timestamp > latest_date.timestamp
-                  WHERE port_id = $3 )
-            )
+           CombinedStockPerformance AS (
+            SELECT DISTINCT ON (symbol, timestamp) *
+            FROM (
+              SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2
+              UNION ALL
+              SELECT * FROM HistoricalStockPerformance
+            ) combined
+            ORDER BY symbol, timestamp DESC NULLS LAST
+          )
             SELECT *
             FROM CombinedStockPerformance
             WHERE symbol = $1
@@ -190,15 +195,18 @@ export class StockService {
                   LIMIT 1
             ),
             CombinedStockPerformance AS (
-                  (SELECT * FROM HistoricalStockPerformance) 
-                    UNION ALL
-                  (SELECT symbol, rsp.timestamp, open, high, low, close, volume 
-                  FROM RecordedStockPerformance rsp
-                  JOIN latest_date ON rsp.timestamp > latest_date.timestamp
-                  WHERE port_id = $2 )
+                  WITH CombinedStockPerformance AS (
+                SELECT DISTINCT ON (symbol, timestamp) *
+                FROM (
+                  SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2 AND symbol = $1
+                  UNION ALL
+                  SELECT * FROM HistoricalStockPerformance WHERE symbol = $1
+                ) combined
+                ORDER BY symbol, timestamp DESC NULLS LAST
+              )
             )
             SELECT timestamp, close FROM CombinedStockPerformance 
-            WHERE symbol = $1 ORDER BY timestamp
+            ORDER BY timestamp
           `,
             [symbol, port_id]);
       }
