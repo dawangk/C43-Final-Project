@@ -75,6 +75,7 @@ export const Dashboard = () => {
                     <Route path="stock/:symbol/:id" element={<StockPage />}/>
                     <Route path="friends" element={<FriendsPage />}/>
                     <Route path="/public-lists" element={<PublicStockListPage />}/>
+                    <Route path="/public-list/:id" element={<ViewSharedStockListPage />}/>
                   </Routes>
                 </div>
               </SidebarInset>

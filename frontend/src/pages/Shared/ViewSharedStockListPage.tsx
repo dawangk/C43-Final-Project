@@ -79,7 +79,7 @@ export const ViewSharedStockListPage = () => {
           </Button>
         </div>
 
-        {id && <StatsDialog sl_id={getStockListQuery.data?.info?.sl_id} open={statsOpen} setOpen={setStatsOpen} stocks={getStockListQuery.data?.list.map((s: StockOwned) => s.symbol)}/>}
+        {id && <StatsDialog sl_id={id} open={statsOpen} setOpen={setStatsOpen} stocks={getStockListQuery.data?.list.map((s: StockOwned) => s.symbol)}/>}
         
       </div>
       {getStockListQuery.isLoading && <Spinner/>}
