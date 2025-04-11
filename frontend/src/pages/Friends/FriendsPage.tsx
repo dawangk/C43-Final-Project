@@ -95,11 +95,10 @@ export const FriendsPage = () => {
       })
     } catch (error: any) {
       console.error(error);
-      if (error.message.startsWith("duplicate"))
       toast({
         title: "Error",
         variant: "destructive",
-        description: "Cannot create stock list with same name."
+        description: error.message
       })
     }
   }
@@ -119,11 +118,10 @@ export const FriendsPage = () => {
       })
     } catch (error: any) {
       console.error(error);
-      if (error.message.startsWith("duplicate"))
       toast({
         title: "Error",
         variant: "destructive",
-        description: "Cannot create stock list with same name."
+        description: error.message
       })
     }
   }

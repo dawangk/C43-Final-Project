@@ -22,6 +22,9 @@ import { getStock } from "@/api/stockApiSlice";
 import { StatsDialog } from "../Portfolios/StatsDialog";
 import { StockOwned, UserReview } from "@/models/db-models";
 import { deleteReview, getReviews } from "@/api/reviewsApiSlice";
+import { getUsersShared, shareStockList } from "@/api/shareApiSlice";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export const ViewStockListPage = () => {
 
@@ -29,6 +32,9 @@ export const ViewStockListPage = () => {
   const [symbol, setSymbol] = useState("");
   const [open, setOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareOpen, setShareOpen ] = useState(false);
+
   const {toast} = useToast();
   const queryClient = useQueryClient()
 
@@ -50,6 +56,12 @@ export const ViewStockListPage = () => {
     enabled: symbol.length > 0
   })
 
+  const getSharedUsersQuery = useQuery({
+    queryKey: ['shared-users', id],
+    queryFn: () => getUsersShared(id as string),
+    enabled: !!id
+  })
+
   const addStockListEntryMutation = useMutation({
     mutationFn: updateStockEntry,
     onSuccess: () => {
@@ -65,6 +77,45 @@ export const ViewStockListPage = () => {
       queryClient.invalidateQueries({ queryKey: ['reviews', id] })
     },
   })
+
+  const shareStockListMutation = useMutation({
+    mutationFn: shareStockList,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shared-users', id] })
+    },
+  })
+
+  const handleShare = async () => {
+    try {
+      const data = await shareStockListMutation.mutateAsync({
+        body: {
+          email: shareEmail,
+        }, 
+        id: id as string
+      });
+      console.log("Share", data);
+      toast({
+        description: `Shared stock list to ${shareEmail}`
+      })
+    } catch (error: any) {
+      console.error(error);
+      if (error.message.startsWith("duplicate")) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Already shared with that user!"
+        })
+      }
+      else {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: error.message
+        })
+      }
+    }
+  }
+
 
   const handleAdd = async () => {
     try {
@@ -122,6 +173,8 @@ export const ViewStockListPage = () => {
               <ChartNoAxesCombined />
             Calculate Stats
           </Button>
+          <Button size="sm" onClick={() => setShareOpen(true)} variant="secondary">Share</Button>
+
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
@@ -161,6 +214,43 @@ export const ViewStockListPage = () => {
                     handleAdd();
                   }}>Add</Button>
                 </div>
+              </div>
+              
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        
+        <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Share</DialogTitle>
+              <div className="pt-4 flex flex-col gap-8">
+                <div className="flex flex-col gap-4">
+                  <Label>Email</Label>
+                  <Input onChange={(e) => setShareEmail(e.target.value)} value={shareEmail}/>
+                  <Label>Currently shared with the following users:</Label>
+                  <div className="flex flex-col gap-2 p-2 border rounded-lg text-sm">
+                    {getSharedUsersQuery.data?.length === 0 && <div className="text-gray-400">No users found</div>}
+                    {getSharedUsersQuery.data?.map((user: any) => (
+                      <div key={user?.user_id}>{user?.username} ({user?.email})</div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 items-center justify-center">
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                    <Button 
+                      size="sm"
+                      onClick={handleShare }
+                      disabled={!shareEmail}
+                    >Add</Button>
+                </div>
+                
               </div>
               
             </DialogHeader>

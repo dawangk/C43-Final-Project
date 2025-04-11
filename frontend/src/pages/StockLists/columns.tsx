@@ -335,3 +335,82 @@ export const publicStockListColumns: ColumnDef<StockList>[] = [
     },
   },
 ]
+
+export const sharedStockListColumns: ColumnDef<StockList>[] = [
+  {
+    accessorKey: "sl_id",
+    header: "ID",
+  },
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "username",
+    header: "Shared by",
+  },
+  {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
+    }
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
+    }
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const stockList = row.original
+ 
+      return (
+        <div className="flex gap-2 justify-end items-center">
+          <Link to={`/dashboard/stock-lists/shared/${stockList.user_id}/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
+        </div>
+      )
+    },
+  },
+]
+
+export const getUnownedStockListColumns = (
+  id: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+  toast: ReturnType<typeof useToast>["toast"]
+): ColumnDef<StockOwnedWithData>[] => [
+  {
+    accessorKey: "symbol",
+    header: "Ticker",
+    cell: ({ row }) => {
+      const symbol: string = row.getValue("symbol")
+      return <Link to={`/dashboard/stock/${symbol}`} className="cursor-pointer hover:text-orange-600 underline">{symbol}</Link>
+    }
+  },
+  {
+    accessorKey: "close",
+    header: "Today's price",
+  },
+  {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>%{val}</div>
+    }
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
+  },
+ 
+];

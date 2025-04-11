@@ -79,7 +79,9 @@ export class ShareService {
       }
 
       result = await db.query(
-          `SELECT user_id FROM Share WHERE sl_id = $1 
+          `SELECT s.user_id, u.username, u.email FROM Share s
+           JOIN Users u ON s.user_id = u.user_id
+           WHERE s.sl_id = $1 
         `,
           [sl_id]);
 

@@ -264,11 +264,13 @@ export class StockListService {
           // stock is given equal weight, so we just find AVG performance.
           `
           WITH sl as(
-            SELECT StockList.* FROM StockList JOIN Share on StockList.sl_id = Share.sl_id 
+            SELECT StockList.*, Users.username FROM StockList 
+            JOIN Share on StockList.sl_id = Share.sl_id 
+            JOIN Users on StockList.user_id = Users.user_id
             WHERE Share.user_id = $1
           )
           SELECT 
-            sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
+            sl.sl_id, sl.user_id, sl.name, sl.username, sl.visibility, sl.created_at, 
             ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
             ROUND(AVG(
               ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
@@ -296,8 +298,8 @@ export class StockListService {
             ORDER BY timestamp DESC
             LIMIT 1
           ) past ON true
-          GROUP BY sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at 
-          `);
+          GROUP BY sl.sl_id, sl.user_id, sl.username, sl.name, sl.visibility, sl.created_at 
+          `, [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {

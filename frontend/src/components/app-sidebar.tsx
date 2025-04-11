@@ -60,6 +60,7 @@ const data = {
       title: "Social",
       url: "",
       icon: BookOpen,
+      isActive: true,
       items: [
         {
           title: "Friends",
