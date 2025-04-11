@@ -8,10 +8,10 @@ const friendService = new FriendService();
 export const sendFriendRequest =
     asyncHandler(async (req: Request, res: Response) => {
       try {
-        const id = Number(req.params.id);
+        const { email } = req.body;
         const user_id = (req as any).user.user_id;
         const {data, error} =
-            await friendService.sendFriendRequest(user_id, id);
+            await friendService.sendFriendRequest(user_id, email);
         if (error) {
           res.status(error.status).json({message: error.message});
           return;

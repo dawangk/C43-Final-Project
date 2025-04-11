@@ -69,22 +69,15 @@ export type MatrixCell = {
 }
 
 export type Friendship = {
-  user1_id: number,
-  user1_name?: string,
-  user1_email?: string,
-  user2_id: number,
-  user2_name?: string,
-  user2_email?: string,
-  created_at?: string,
+  user_id: number,
+  username?: string,
+  email?: string,
 }
 
 export type FriendRequest = {
-  incoming_id: number,
-  incoming_name?: string,
-  incoming_email?: string,
-  to_id: number,
-  to_name?: string,
-  to_email?: string,
+  user_id: number,
+  username?: string,
+  email?: string,
   status: string,
   created_at?: string,
 }

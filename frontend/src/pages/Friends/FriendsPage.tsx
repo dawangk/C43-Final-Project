@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react"
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/hooks/use-toast";
-import { addFriend, getFriendRequests, getFriends, removeFriend, respondFriendRequest } from "@/api/friendsApiSlice";
+import { addFriend, getIncomingFriendRequests, getFriends, removeFriend, respondFriendRequest, getOutgoingFriendRequests } from "@/api/friendsApiSlice";
 import { FriendRequest, Friendship } from "@/models/db-models";
 
 export const FriendsPage = () => {
@@ -29,6 +29,7 @@ export const FriendsPage = () => {
     mutationFn: addFriend,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends'] })
+      queryClient.invalidateQueries({ queryKey: ['outgoing-friend-requests'] })
     },
   })
 
@@ -42,7 +43,8 @@ export const FriendsPage = () => {
   const respondFriendRequestMutation = useMutation({
     mutationFn: respondFriendRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friends', 'friend-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['friends'] })
+      queryClient.invalidateQueries({ queryKey: ['incoming-friend-requests'] })
     },
   })
 
@@ -51,9 +53,14 @@ export const FriendsPage = () => {
     queryFn: getFriends
   })
 
-  const getFriendRequestsQuery = useQuery({
-    queryKey: ["friend-requests"],
-    queryFn: getFriendRequests
+  const getIncomingFriendRequestsQuery = useQuery({
+    queryKey: ["incoming-friend-requests"],
+    queryFn: getIncomingFriendRequests
+  })
+
+  const getOutgoingFriendRequestsQuery = useQuery({
+    queryKey: ["outgoing-friend-requests"],
+    queryFn: getOutgoingFriendRequests
   })
 
   const {toast} = useToast();
@@ -61,31 +68,30 @@ export const FriendsPage = () => {
   const handleAddFriend = async () => {
     try {
       const data = await addFriendMutation.mutateAsync({
-        email: email,
+        email: email
       });
       console.log("Add friend", data);
       toast({
-        description: `Added friend`
+        description: `Sent friend request to ${email}`
       })
     } catch (error: any) {
       console.error(error);
-      if (error.message.startsWith("duplicate"))
       toast({
         title: "Error",
         variant: "destructive",
-        description: "Cannot create stock list with same name."
+        description: error.message
       })
     }
   }
 
   const handleRemoveFriend = async (id: number) => {
     try {
-      const data = await removeFriendMutation.mutateAsync({
-        name: name,
-      });
-      console.log("Add friend", data);
+      const data = await removeFriendMutation.mutateAsync(
+        id,
+      );
+      console.log("Remove friend", data);
       toast({
-        description: `Added ${name} as friend`
+        description: `Removed friend`
       })
     } catch (error: any) {
       console.error(error);
@@ -102,8 +108,10 @@ export const FriendsPage = () => {
   const handleRespondRequest = async (incoming_id: number, response: string) => {
     try {
       const data = await respondFriendRequestMutation.mutateAsync({
-        incoming_id: incoming_id,
-        response: response,
+        id: incoming_id,
+        body: {
+          status: response
+        },
       });
       console.log("Respond to friend request", data);
       toast({
@@ -133,7 +141,7 @@ export const FriendsPage = () => {
               <DialogTitle>Add friend</DialogTitle>
               <div className="pt-4 flex flex-col gap-8">
                 <div className="flex flex-col gap-4">
-                  <Label>Name</Label>
+                  <Label>Email</Label>
                   <Input onChange={(e) => setEmail(e.target.value)} value={email}/>
                 </div>
                 
@@ -144,7 +152,11 @@ export const FriendsPage = () => {
                     </Button>
                   </DialogClose>
                   <DialogClose asChild>
-                    <Button size="sm" onClick={handleAddFriend} >Add</Button>
+                    <Button 
+                      size="sm"
+                      onClick={handleAddFriend }
+                      disabled={!email}
+                    >Add</Button>
                   </DialogClose>
                 </div>
                 
@@ -160,10 +172,10 @@ export const FriendsPage = () => {
           <Spinner />
         ) : (
           <div className="flex flex-col gap-4 w-full">
-            {getFriendsQuery.data?.map((friendShip: Friendship) => (
-              <div className="p-4 border rounded-lg flex justify-between items-center">
-                <div>{friendShip?.user2_name} ({friendShip.user2_email})</div>
-                <Button size="sm" variant="secondary" onClick={() => handleRemoveFriend(friendShip?.user2_id)}>Remove friend</Button>
+            {getFriendsQuery.data?.result?.map((friendShip: Friendship) => (
+              <div className="p-4 border rounded-lg flex justify-between items-center" key={friendShip.user_id}>
+                <div>{friendShip?.username} ({friendShip.email})</div>
+                <Button size="sm" variant="secondary" onClick={() => handleRemoveFriend(friendShip?.user_id)}>Remove friend</Button>
               </div>  
             ))}
           </div>
@@ -171,23 +183,45 @@ export const FriendsPage = () => {
       </div>
 
       <div className="flex justify-between w-full">
-        <h1 className="text-xl">Pending Requests</h1>
-        <div className="flex gap-4">
-          <Button size="sm" onClick={() => setOpen(true)} >+ Add</Button>
-        </div>
+        <h1 className="text-xl">Incoming Requests</h1>
       </div>
 
       <div>
-        {getFriendRequestsQuery.isLoading ? (
+        {getIncomingFriendRequestsQuery.isLoading ? (
           <Spinner />
+        ) : getIncomingFriendRequestsQuery.data?.result?.length === 0 ? (
+          <div>None</div>
+        ) :  (
+          <div className="flex flex-col gap-4 w-full">
+            {getIncomingFriendRequestsQuery.data?.result?.map((friendReq: FriendRequest) => (
+              <div className="p-4 border rounded-lg flex justify-between items-center">
+                <div>From: {friendReq?.username} ({friendReq.email})</div>
+                <div className="flex gap-4">
+                  <Button size="sm" className="bg-green-500 text-white hover:bg-green-600"onClick={() => handleRespondRequest(friendReq?.user_id, "accepted")}>Accept</Button>
+                  <Button size="sm" className="bg-red-500 text-white hover:bg-red-600"  onClick={() => handleRespondRequest(friendReq?.user_id, "rejected")}>Reject</Button>
+                </div>
+              </div>  
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between w-full">
+        <h1 className="text-xl">Outgoing Requests</h1>
+      </div>
+
+      <div>
+        {getOutgoingFriendRequestsQuery.isLoading ? (
+          <Spinner />
+        ) : getOutgoingFriendRequestsQuery.data?.result?.length === 0 ? (
+          <div>None</div>
         ) : (
           <div className="flex flex-col gap-4 w-full">
-            {getFriendRequestsQuery.data?.map((friendReq: FriendRequest) => (
+            {getOutgoingFriendRequestsQuery.data?.result?.map((friendReq: FriendRequest) => (
               <div className="p-4 border rounded-lg flex justify-between items-center">
-                <div>From: {friendReq?.incoming_name} ({friendReq.incoming_email})</div>
+                <div>To: {friendReq?.username} ({friendReq.email})</div>
                 <div className="flex gap-4">
-                  <Button size="sm" className="bg-green-500 text-white" variant="secondary" onClick={() => handleRespondRequest(friendReq?.incoming_id, "accept")}>Accept</Button>
-                  <Button size="sm" className="bg-red-500 text-white" variant="secondary" onClick={() => handleRespondRequest(friendReq?.incoming_id, "deny")}>Deny</Button>
+                  Status: {friendReq?.status.toUpperCase()}
                 </div>
               </div>  
             ))}

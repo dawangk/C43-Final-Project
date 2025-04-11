@@ -10,13 +10,17 @@ import {
   logout,
 } from "@/api/authApiSlice";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAuthStore from "@/stores/authStore";
 
 export function UserMenu() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const logoutMutation = useMutation({
-    mutationFn: logout
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    }
   })
   const clearCredentials = useAuthStore(state => state.clearCredentials);
 

@@ -5,7 +5,7 @@ import {authHandler} from '../middleware/authHandler';
 
 export const friendRouter = express.Router();
 
-friendRouter.post('/:id', authHandler, sendFriendRequest);
+friendRouter.post('/', authHandler, sendFriendRequest);
 friendRouter.post('/update/:id', authHandler, updateFriendRequest);
 
 friendRouter.get('/', authHandler, getFriends);

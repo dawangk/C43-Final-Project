@@ -5,12 +5,20 @@ import {ResponseType} from '../models/response';
 
 
 export class FriendService {
-  async sendFriendRequest(from: number, to: number): Promise<ResponseType> {
+  async sendFriendRequest(from: number, toEmail: string): Promise<ResponseType> {
     try {
-      if (!from || !to) {
+      if (!from || !toEmail) {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
-      if (from == to) {
+      const toResult = await db.query(
+        `SELECT user_id FROM Users WHERE email = $1`,
+        [toEmail]
+      )
+      if (toResult.rowCount === 0) {
+        return {error: {status: 404, message: "Email not found"}}
+      }
+      const to = toResult.rows[0]?.user_id
+      if (from === to) {
         return {
           error: {
             status: 400,
