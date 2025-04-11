@@ -69,6 +69,10 @@ const data = {
           title: "Shared with me",
           url: "/dashboard/shared",
         },
+        {
+          title: "Browse Stock Lists",
+          url: "/dashboard/public-lists",
+        },
       ],
     },
   ]
