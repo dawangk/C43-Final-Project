@@ -152,3 +152,12 @@ CREATE TABLE stock_predictions_cache (
 
 
 alter table friendrequest alter column status set default 'pending';
+
+create table deletedFriends (
+	user1_id INT NOT NULL,
+	user2_id INT NOT NULL,
+	created_at TIMESTAMP DEFAULT NOW(), 
+	FOREIGN KEY(user1_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
+	FOREIGN KEY(user2_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
+	CHECK (user1_id < user2_id)
+);
