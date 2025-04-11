@@ -81,7 +81,7 @@ export const getStockListsWithData = async () => {
 }
 
 export const getPublicStockListsWithData = async () => {
-  const res = await fetch(`${SERVER_URL}/api/stocklist/public/data`, {
+  const res = await fetch(`${SERVER_URL}/api/stocklist/data?type=public`, {
     method: "GET",headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/plain, */*",
