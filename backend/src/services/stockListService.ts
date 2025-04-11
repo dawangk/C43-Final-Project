@@ -61,16 +61,7 @@ export class StockListService {
       }
       const result = await db.query(
           `
-          WITH sl AS(
-            SELECT * FROM StockList WHERE user_id = $2
-            UNION ALL
-            SELECT StockList.sl_id, StockList.user_id, name, visibility, created_at 
-            FROM StockList JOIN 
-            Share on Share.sl_id = StockList.sl_id
-            WHERE Share.user_id = $2 
-            OR visibility = 'public'
-          )
-          SELECT * FROM sl WHERE sl.sl_id = $1`,
+          SELECT * FROM StockList sl WHERE sl.sl_id = $1 AND sl.user_id = $2`,
           [sl_id, user_id]);
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'stockList not found'}};
@@ -121,12 +112,6 @@ export class StockListService {
       const result = await db.query(
           `
           SELECT * FROM StockList WHERE user_id = $1
-          UNION ALL
-          SELECT StockList.sl_id, StockList.user_id, name, visibility, created_at 
-          FROM StockList JOIN 
-          Share on Share.sl_id = StockList.sl_id
-          WHERE Share.user_id = $1 
-          OR visibility = 'public'
           `,
           [user_id]);
       return {data: result.rows};
@@ -146,14 +131,8 @@ export class StockListService {
           // -- performance of a stock list is calculated for 1d and YTD. Each
           // stock is given equal weight, so we just find AVG performance.
           `
-          WITH sl AS (
+          WITH sl as(
             SELECT * FROM StockList WHERE user_id = $1
-            UNION ALL
-            SELECT StockList.sl_id as sl_id, StockList.user_id as user_id, name, visibility, created_at 
-            FROM StockList JOIN 
-            Share on Share.sl_id = StockList.sl_id
-            WHERE Share.user_id = $1 
-            OR visibility = 'public'
           )
           SELECT 
             sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
@@ -187,6 +166,138 @@ export class StockListService {
           GROUP BY sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at 
           `,
           [user_id]);
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getPublicStockLists(): Promise<ResponseType> {
+    try {
+      const result = await db.query(`
+          SELECT * FROM StockList WHERE visibility = 'public'
+          `);
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getPublicStockListsWithData(): Promise<ResponseType> {
+    try {
+      const result = await db.query(
+          // -- performance of a stock list is calculated for 1d and YTD. Each
+          // stock is given equal weight, so we just find AVG performance.
+          `
+          WITH sl as(
+            SELECT * FROM StockList WHERE visibility = 'public'
+          )
+          SELECT 
+            sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
+            ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
+            ROUND(AVG(
+              ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
+            )::NUMERIC, 2) AS performance_ytd
+          FROM sl
+          LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) latest ON true
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+              AND timestamp <= (
+                SELECT timestamp 
+                FROM HistoricalStockPerformance 
+                WHERE symbol = so.symbol 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+              ) - INTERVAL '1 year'
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) past ON true
+          GROUP BY sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at 
+          `);
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getSharedStockLists(user_id: number): Promise<ResponseType> {
+    try {
+      if (!user_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const result = await db.query(
+          `
+          SELECT StockList.* FROM StockList JOIN Share on StockList.sl_id = Share.sl_id 
+          WHERE Share.user_id = $1
+          `,
+          [user_id]);
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getSharedStockListsWithData(user_id: number): Promise<ResponseType> {
+    try {
+      if (!user_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const result = await db.query(
+          // -- performance of a stock list is calculated for 1d and YTD. Each
+          // stock is given equal weight, so we just find AVG performance.
+          `
+          WITH sl as(
+            SELECT StockList.* FROM StockList JOIN Share on StockList.sl_id = Share.sl_id 
+            WHERE Share.user_id = $1
+          )
+          SELECT 
+            sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
+            ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
+            ROUND(AVG(
+              ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
+            )::NUMERIC, 2) AS performance_ytd
+          FROM sl
+          LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) latest ON true
+          LEFT JOIN LATERAL (
+            SELECT *
+            FROM HistoricalStockPerformance
+            WHERE symbol = so.symbol
+              AND timestamp <= (
+                SELECT timestamp 
+                FROM HistoricalStockPerformance 
+                WHERE symbol = so.symbol 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+              ) - INTERVAL '1 year'
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) past ON true
+          GROUP BY sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at 
+          `);
       return {data: result.rows};
     } catch (error: any) {
       return {
