@@ -340,7 +340,9 @@ export class StockListService {
       if (error) {
         return {error: {status: 400, message: 'Invalid stock list.'}};
       }
-      const cur_visibility = data.visibility;
+      const cur_visibility = data.info.visibility;
+      console.log(cur_visibility);
+      console.log(data);
       switch (cur_visibility) {
         case 'private':
           res_type = 'public';
@@ -350,7 +352,7 @@ export class StockListService {
           break;
         case 'public':
           const res = await db.query(
-              `SELECT * FROM StockList JOIN Shared on StockList.sl_id = Shared.sl_id WHERE StockList.user_id = $1, StockList.sl_id = $2`,
+              `SELECT * FROM StockList JOIN Share on StockList.sl_id = Share.sl_id WHERE StockList.user_id = $1 AND StockList.sl_id = $2`,
               [user_id, sl_id]);
           if (res.rowCount == 0) {
             res_type = 'private';
@@ -363,7 +365,7 @@ export class StockListService {
       }
 
       const result = await db.query(
-          'UPDATE StockList SET visibility = $1 WHERE sl_id = $2 AND user_id = $3 RETURNING sl_id, name',
+          'UPDATE StockList SET visibility = $1 WHERE sl_id = $2 AND user_id = $3 RETURNING sl_id, name, visibility',
           [res_type, sl_id, user_id]);
 
       return {data: {message: 'Update successful!', content: result.rows[0]}};
