@@ -128,6 +128,25 @@ export const updateStockList =
       }
     });
 
+export const updateStockListVisibility =
+    asyncHandler(async (req: Request, res: Response) => {
+      try {
+        const id = Number(req.params.id);
+        const user_id = (req as any).user.user_id;
+        const {data, error} =
+            await stockListService.updateStockListVisibility(user_id, id);
+
+        if (error) {
+          res.status(error.status).json({message: error.message});
+          return;
+        }
+
+        res.status(200).json(data);
+      } catch (error) {
+        res.status(500).json({message: 'Internal Server Error'});
+      }
+    });
+
 export const deleteStockList =
     asyncHandler(async (req: Request, res: Response) => {
       try {

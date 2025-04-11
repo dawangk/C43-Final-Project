@@ -328,23 +328,43 @@ export class StockListService {
     }
   }
 
-  async updateStockListVisibility(
-      user_id: number, sl_id: number,
-      visibility: string): Promise<ResponseType> {
+  async updateStockListVisibility(user_id: number, sl_id: number):
+      Promise<ResponseType> {
     try {
-      if (!user_id || !sl_id || !visibility) {
+      if (!user_id || !sl_id) {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
-      if (visibility != 'private' && visibility != 'shared' &&
-          visibility != 'public') {
-        return {error: {status: 400, message: 'Invalid Status.'}};
+      let res_type = 'private';
+
+      const {data, error} = await this.getStockListById(user_id, sl_id);
+      if (error) {
+        return {error: {status: 400, message: 'Invalid stock list.'}};
       }
+      const cur_visibility = data.visibility;
+      switch (cur_visibility) {
+        case 'private':
+          res_type = 'public';
+          break;
+        case 'shared':
+          res_type = 'public';
+          break;
+        case 'public':
+          const res = await db.query(
+              `SELECT * FROM StockList JOIN Shared on StockList.sl_id = Shared.sl_id WHERE StockList.user_id = $1, StockList.sl_id = $2`,
+              [user_id, sl_id]);
+          if (res.rowCount == 0) {
+            res_type = 'private';
+          } else {
+            res_type = 'public';
+          }
+          break;
+        default:
+          return {error: {status: 500, message: 'This should never happen.'}};
+      }
+
       const result = await db.query(
           'UPDATE StockList SET visibility = $1 WHERE sl_id = $2 AND user_id = $3 RETURNING sl_id, name',
-          [visibility, sl_id, user_id]);
-      if (result.rowCount == 0) {
-        return {error: {status: 404, message: 'no stockLists found for user'}};
-      }
+          [res_type, sl_id, user_id]);
 
       return {data: {message: 'Update successful!', content: result.rows[0]}};
 
