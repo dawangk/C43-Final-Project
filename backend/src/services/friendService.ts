@@ -236,6 +236,9 @@ export class FriendService {
 
   async deleteFriends(deletor: number, deleted: number): Promise<ResponseType> {
     try {
+      if (!deletor || !deleted) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
       const [id1, id2] =
           [Math.min(deletor, deleted), Math.max(deletor, deleted)];
       const result = await db.query(

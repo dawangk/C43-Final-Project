@@ -57,7 +57,6 @@ export class StockListService {
     }
   }
 
-
   async getStockListByIdWithData(user_id: number, sl_id: number):
       Promise<ResponseType> {
     try {
@@ -115,6 +114,28 @@ export class StockListService {
       }
       const result = await db.query(
           'SELECT * FROM StockList WHERE user_id = $1', [user_id]);
+      return {data: result.rows};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
+  async getViewableStockLists(user_id: number): Promise<ResponseType> {
+    try {
+      if (!user_id) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      const result = await db.query(
+          `
+          SELECT * 
+          FROM StockList JOIN Share 
+          ON StockList.sl_id = Share.sl_id 
+          WHERE StockList.visibility = 'public' 
+          OR (Share.user_id = $1 AND StockList.visibility != 'private')
+          `,
+          [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {
@@ -195,7 +216,32 @@ export class StockListService {
     }
   }
 
+  async updateStockListVisibility(
+      user_id: number, sl_id: number,
+      visibility: string): Promise<ResponseType> {
+    try {
+      if (!user_id || !sl_id || !visibility) {
+        return {error: {status: 400, message: 'Missing parameters.'}};
+      }
+      if (visibility != 'private' && visibility != 'shared' &&
+          visibility != 'public') {
+        return {error: {status: 400, message: 'Invalid Status.'}};
+      }
+      const result = await db.query(
+          'UPDATE StockList SET visibility = $1 WHERE sl_id = $2 AND user_id = $3 RETURNING sl_id, name',
+          [visibility, sl_id, user_id]);
+      if (result.rowCount == 0) {
+        return {error: {status: 404, message: 'no stockLists found for user'}};
+      }
 
+      return {data: {message: 'Update successful!', content: result.rows[0]}};
+
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
   /**
    * Inserts {symbol, amount} into stockList with sl_id, if it exists, simply
    * overrides the value

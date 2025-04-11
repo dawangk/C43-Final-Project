@@ -8,6 +8,7 @@ import db from './db/connectDb';
 import asyncHandler from './middleware/asyncHandler';
 import {friendRouter} from './routes/friendRoutes';
 import {portfolioRouter} from './routes/portfolioRoutes';
+import {shareRouter} from './routes/shareRoutes';
 import {stockListRouter} from './routes/stockListRoutes';
 import {stockRouter} from './routes/stockRoutes';
 import {authRouter} from './routes/userRoutes';
@@ -27,7 +28,7 @@ app.use('/api/stocklist', stockListRouter);
 app.use('/api/portfolio', portfolioRouter);
 app.use('/auth', authRouter);
 app.use('/friend', friendRouter);
-
+app.use('/share', shareRouter);
 
 /**
  * Root route to test the backend server.
