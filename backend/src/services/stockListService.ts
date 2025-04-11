@@ -364,7 +364,7 @@ export class StockListService {
           if (res.rowCount == 0) {
             res_type = 'private';
           } else {
-            res_type = 'public';
+            res_type = 'shared';
           }
           break;
         default:
