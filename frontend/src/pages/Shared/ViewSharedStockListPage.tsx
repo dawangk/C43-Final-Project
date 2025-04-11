@@ -10,7 +10,7 @@ import { ChartNoAxesCombined, ChevronLeft, UserIcon } from "lucide-react";
 import { getStock } from "@/api/stockApiSlice";
 import { StatsDialog } from "../Portfolios/StatsDialog";
 import { StockOwned, UserReview } from "@/models/db-models";
-import { createReview, deleteReview, getReviews } from "@/api/reviewsApiSlice";
+import { createReview, deleteReview, getReviews, updateReview } from "@/api/reviewsApiSlice";
 import { getUnownedStockListColumns } from "../StockLists/columns";
 import {
   Dialog,
@@ -29,7 +29,9 @@ export const ViewSharedStockListPage = () => {
   const { id } = useParams();
   const [statsOpen, setStatsOpen] = useState(false);
   const [createReviewOpen, setCreateReviewOpen] = useState(false)
+  const [editReviewOpen, setEditReviewOpen] = useState(false)
   const [reviewContent, setReviewContent] = useState<string>("");
+  const [newContent, setNewContent] = useState<string>(""); 
   
   const me = JSON.parse(localStorage.getItem("userInfo") || "{}");
 
@@ -58,6 +60,13 @@ export const ViewSharedStockListPage = () => {
 
   const deleteReviewMutation = useMutation({
     mutationFn: deleteReview,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews', id] })
+    },
+  })
+
+  const updateReviewMutation = useMutation({
+    mutationFn: updateReview,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews', id] })
     },
@@ -92,6 +101,23 @@ export const ViewSharedStockListPage = () => {
       console.log("Delete review", data);
       toast({
         description: `Deleted reivew.`
+      })
+    } catch (error: any) {
+      console.error(error);
+    }
+  }
+
+  const handleUpdateReview = async () => {
+    try {
+      const data = await updateReviewMutation.mutateAsync( {
+        id: id as string,
+        body: {
+          content: newContent
+        }
+      } );
+      console.log("Update review", data);
+      toast({
+        description: `Updated reivew.`
       })
     } catch (error: any) {
       console.error(error);
@@ -174,7 +200,37 @@ export const ViewSharedStockListPage = () => {
             </DialogHeader>
           </DialogContent>
         </Dialog>
-
+        
+        <Dialog open={editReviewOpen} onOpenChange={setEditReviewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit review</DialogTitle>
+              <div className="pt-4 flex flex-col gap-8">
+                <div className="flex flex-col gap-4">
+                  <Label>Content</Label>
+                  <Textarea onChange={(e) => setNewContent(e.target.value)} value={newContent}/>
+                </div>
+                
+                <div className="flex gap-4 items-center justify-center">
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button 
+                      size="sm"
+                      onClick={handleUpdateReview }
+                      disabled={!newContent}
+                    >Save</Button>
+                      </DialogClose>
+                </div>
+                
+              </div>
+              
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       <div>
         {getReviewsQuery.isLoading ? (
           <Spinner />
@@ -189,9 +245,14 @@ export const ViewSharedStockListPage = () => {
                     <UserIcon />
                     <div>{review?.reviewer_name} ({review?.reviewer_email}) said:</div>
                   </div>
+                  <div className="flex gap-4">
                   {(review.user_id === me?.user_id || getStockListQuery.data?.info?.user_id === me?.user_id) && 
                     <Button size="sm" variant="secondary" onClick={() => handleDeleteReview(review?.user_id.toString())}>Delete Review</Button>
                   }
+                  {(review.user_id === me?.user_id) && 
+                    <Button size="sm" variant="secondary" onClick={() => setEditReviewOpen(true)}>Edit Review</Button>
+                  }
+                  </div>
                 </div>
 
                 <div className="border rounded-lg w-full text-sm p-2">
