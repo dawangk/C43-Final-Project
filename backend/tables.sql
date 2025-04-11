@@ -177,3 +177,5 @@ create table deletedFriends (
 	FOREIGN KEY(user2_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 	CHECK (user1_id < user2_id)
 );
+
+alter table share add primary key (sl_id, user_id);

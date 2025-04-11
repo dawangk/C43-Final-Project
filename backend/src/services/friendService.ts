@@ -129,6 +129,9 @@ export class FriendService {
       let result = await db.query(
           `SELECT * FROM FriendRequest WHERE incoming_id = $1 AND to_id = $2`,
           [from, to]);
+      if (result.rowCount === 0) {
+        return {error: {status: 404, message: 'No friend request found'}}
+      }
       let cur_status = result.rows[0].status;
       if (cur_status != 'pending') {
         return {
