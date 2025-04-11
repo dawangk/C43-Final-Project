@@ -2,7 +2,7 @@ import { getStockListWithData } from "@/api/stockListApiSlice";
 import { DataTable } from "@/components/data-table";
 import { Spinner } from "@/components/ui/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button";
 import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ export const ViewSharedStockListPage = () => {
 
   const {toast} = useToast();
   const queryClient = useQueryClient()
+  const navigate = useNavigate();
 
   const getStockListQuery = useQuery({
     queryKey: ["stock-list", id],
@@ -66,7 +67,7 @@ export const ViewSharedStockListPage = () => {
     <div className="w-full p-8 flex flex-col gap-8">
       <div className="flex justify-between items-center">
         <div className="flex items-center justify-between gap-4">
-          <Link to="/dashboard/stock-lists"><ChevronLeft className="cursor-pointer"/></Link>
+          <ChevronLeft className="cursor-pointer" onClick={() => navigate(-1)}/>
           <h1 className="text-xl">{getStockListQuery.data?.info?.name ?? ""}</h1>
         </div>
 
