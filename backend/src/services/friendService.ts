@@ -100,7 +100,7 @@ export class FriendService {
 
       await db.transaction(async (trx) => {
         await trx.query(
-            `DELETE FROM DeletedFriendRequest WHERE user1_id = $1 AND user2_id = $2`,
+            `DELETE FROM DeletedFriends WHERE user1_id = $1 AND user2_id = $2`,
             [id1, id2]);
 
         result = await trx.query(
