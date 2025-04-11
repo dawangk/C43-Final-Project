@@ -62,7 +62,7 @@ export class StockListService {
       const result = await db.query(
           `
           SELECT * FROM StockList sl 
-          JOIN Share s on s.sl_id = sl.sl_id
+          LEFT JOIN Share s on s.sl_id = sl.sl_id
           WHERE sl.sl_id = $1 AND (sl.user_id = $2 OR sl.visibility = 'public' OR s.user_id = $2)`,
           [sl_id, user_id]);
       if (result.rowCount == 0) {
