@@ -135,14 +135,9 @@ export const ViewStockListPage = () => {
     }
   }
 
-  const handleDeleteReview = async (sl_id: number, user_id: number) => {
+  const handleDeleteReview = async () => {
     try {
-      const data = await deleteReviewMutation.mutateAsync({
-        body: {
-          sl_id,
-          user_id
-        }, 
-      });
+      const data = await deleteReviewMutation.mutateAsync(id as string);
       console.log("Delete review", data);
       toast({
         description: `Deleted reivew.`
@@ -283,6 +278,8 @@ export const ViewStockListPage = () => {
       <div>
         {getReviewsQuery.isLoading ? (
           <Spinner />
+        ) : getReviewsQuery.data?.length === 0 ? (
+          <div>No reviews found</div>
         ) : (
           <div className="flex flex-col gap-4 w-full">
             {getReviewsQuery.data?.map((review: UserReview) => (
@@ -292,7 +289,7 @@ export const ViewStockListPage = () => {
                     <UserIcon />
                     <div>{review?.reviewer_name} ({review?.reviewer_email}) said:</div>
                   </div>
-                  <Button size="sm" variant="secondary" onClick={() => handleDeleteReview(review.sl_id, review.user_id)}>Delete Review</Button>
+                  <Button size="sm" variant="secondary" onClick={handleDeleteReview}>Delete Review</Button>
 
                 </div>
 

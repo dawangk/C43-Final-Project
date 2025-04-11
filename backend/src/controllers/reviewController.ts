@@ -29,7 +29,8 @@ export const getReviews =
     asyncHandler(async (req: Request, res: Response) => {
       try {
         const sl_id = Number(req.params.id);
-        const { data, error } = await reviewService.getReviews(sl_id);
+        const user_id = (req as any).user.user_id;
+        const { data, error } = await reviewService.getReviews(sl_id, user_id);
         if (error) {
           res.status(error.status).json({message: error.message});
           return;
@@ -76,7 +77,7 @@ export const deleteReview =
         }
         else {
           ({data, error} =
-            await reviewService.deleteReview(Number(reviewer_id), Number(sl_id), user_id));
+            await reviewService.deleteReview(Number(reviewer_id), Number(sl_id)));
         }
 
         if (error) {

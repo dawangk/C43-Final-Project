@@ -27,7 +27,7 @@ export class ReviewService {
     }
   }
 
-  async getReviews(sl_id: number): Promise<ResponseType> {
+  async getReviews(sl_id: number, user_id: number): Promise<ResponseType> {
     try {
       if (!sl_id) {
         return {error: {status: 400, message: 'Missing parameters.'}};
@@ -41,12 +41,33 @@ export class ReviewService {
           error: {status: 400, message: 'Invalid StockList'}
         }
       }
-
-      result = await db.query(
+      
+      // public or I am the owner
+      if (result.rows[0]?.visibility === 'public' || user_id === result.rows[0]?.user_id) {
+        // return all
+         result = await db.query(
           `
-            SELECT * FROM UserReview 
+            SELECT ur.user_id, u.username as reviewer_name, u.email as reviewer_email, sl_id, content FROM UserReview ur
+            JOIN Users u ON u.user_id = ur.user_id
             WHERE sl_id = $1`,
           [sl_id]);
+      }
+      else if (result.rows[0]?.visibility === 'shared'){
+        // I must be the reviewer
+        result = await db.query(
+          `
+            SELECT ur.user_id, u.username as reviewer_name, u.email as reviewer_email, sl_id, content FROM UserReview ur
+            JOIN Users u ON u.user_id = ur.user_id
+            WHERE sl_id = $1 AND ur.user_id = $2`,
+          [sl_id, user_id]);
+      }
+      else { 
+        return {
+          error: {status: 404, message: 'Cannot access reviews'}
+        }
+      }
+
+
       return {data: result.rows};
     } catch (error: any) {
       return {
@@ -116,7 +137,7 @@ export class ReviewService {
     }
   }
 
-  async deleteReview(reviewer_id: number, sl_id: number, user_id: number):
+  async deleteReview(reviewer_id: number, sl_id: number):
       Promise<ResponseType> {
     try {
       if (!reviewer_id || !sl_id) {
@@ -127,10 +148,10 @@ export class ReviewService {
           `
           DELETE FROM UserReview ur
           USING StockList sl 
-          WHERE ur.sl_id = sl.sl_id AND sl.user_id = $3 AND ur.sl_id = $1 AND ur.user_id = $2 
+          WHERE ur.sl_id = sl.sl_id AND ur.sl_id = $1 AND ur.user_id = $2 
           RETURNING ur.sl_id, ur.user_id
           `,
-          [sl_id, reviewer_id, user_id]);
+          [sl_id, reviewer_id]);
       if (result.rowCount == 0) {
         return {
           error:

@@ -10,13 +10,28 @@ import { ChartNoAxesCombined, ChevronLeft, UserIcon } from "lucide-react";
 import { getStock } from "@/api/stockApiSlice";
 import { StatsDialog } from "../Portfolios/StatsDialog";
 import { StockOwned, UserReview } from "@/models/db-models";
-import { deleteReview, getReviews } from "@/api/reviewsApiSlice";
+import { createReview, deleteReview, getReviews } from "@/api/reviewsApiSlice";
 import { getUnownedStockListColumns } from "../StockLists/columns";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const ViewSharedStockListPage = () => {
 
   const { id } = useParams();
   const [statsOpen, setStatsOpen] = useState(false);
+  const [createReviewOpen, setCreateReviewOpen] = useState(false)
+  const [reviewContent, setReviewContent] = useState<string>("");
+  
+  const me = JSON.parse(localStorage.getItem("userInfo") || "{}");
 
   const {toast} = useToast();
   const queryClient = useQueryClient()
@@ -34,6 +49,13 @@ export const ViewSharedStockListPage = () => {
     enabled: !!id // Query will only run if id exists (is truthy)
   })
 
+  const createReviewMutation = useMutation({
+    mutationFn: createReview,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews', id] })
+    },
+  })
+
   const deleteReviewMutation = useMutation({
     mutationFn: deleteReview,
     onSuccess: () => {
@@ -41,14 +63,32 @@ export const ViewSharedStockListPage = () => {
     },
   })
 
-  const handleDeleteReview = async (sl_id: number, user_id: number) => {
+  const handleCreateReview = async () => {
     try {
-      const data = await deleteReviewMutation.mutateAsync({
-        body: {
-          sl_id,
-          user_id
-        }, 
+      const data = await createReviewMutation.mutateAsync({
+        sl_id: id,
+        content: reviewContent,
       });
+      console.log("Create review", data);
+      toast({
+        description: `Created reivew.`
+      })
+    } catch (error: any) {
+      console.error(error);
+      if (error.message.startsWith("duplicate")) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Already reviewed!"
+        })
+      }
+    }
+  }
+
+
+  const handleDeleteReview = async (reviewer_id: string) => {
+    try {
+      const data = await deleteReviewMutation.mutateAsync({reviewer_id, sl_id: id as string});
       console.log("Delete review", data);
       toast({
         description: `Deleted reivew.`
@@ -97,15 +137,49 @@ export const ViewSharedStockListPage = () => {
         </div>
       )}
 
-      <div className="flex justify-between w-full">
+      <div className="flex justify-between items-center w-full">
         <h1 className="text-xl">Reviews</h1>
         <div className="flex gap-4">
+          <Button onClick={() => setCreateReviewOpen(true)}>+ Add review</Button>
         </div>
       </div>
+
+      <Dialog open={createReviewOpen} onOpenChange={setCreateReviewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add review</DialogTitle>
+              <div className="pt-4 flex flex-col gap-8">
+                <div className="flex flex-col gap-4">
+                  <Label>Content</Label>
+                  <Textarea onChange={(e) => setReviewContent(e.target.value)} value={reviewContent}/>
+                </div>
+                
+                <div className="flex gap-4 items-center justify-center">
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button 
+                      size="sm"
+                      onClick={handleCreateReview }
+                      disabled={!reviewContent}
+                    >Add</Button>
+                      </DialogClose>
+                </div>
+                
+              </div>
+              
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
 
       <div>
         {getReviewsQuery.isLoading ? (
           <Spinner />
+        ) : getReviewsQuery.data?.length === 0 ? (
+          <div>No reviews found</div>
         ) : (
           <div className="flex flex-col gap-4 w-full">
             {getReviewsQuery.data?.map((review: UserReview) => (
@@ -115,8 +189,9 @@ export const ViewSharedStockListPage = () => {
                     <UserIcon />
                     <div>{review?.reviewer_name} ({review?.reviewer_email}) said:</div>
                   </div>
-                  <Button size="sm" variant="secondary" onClick={() => handleDeleteReview(review.sl_id, review.user_id)}>Delete Review</Button>
-
+                  {(review.user_id === me?.user_id || getStockListQuery.data?.info?.user_id === me?.user_id) && 
+                    <Button size="sm" variant="secondary" onClick={() => handleDeleteReview(review?.user_id.toString())}>Delete Review</Button>
+                  }
                 </div>
 
                 <div className="border rounded-lg w-full text-sm p-2">
