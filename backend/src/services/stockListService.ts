@@ -61,7 +61,9 @@ export class StockListService {
       }
       const result = await db.query(
           `
-          SELECT * FROM StockList sl WHERE sl.sl_id = $1 AND sl.user_id = $2`,
+          SELECT * FROM StockList sl 
+          JOIN Share s on s.sl_id = sl.sl_id
+          WHERE sl.sl_id = $1 AND (sl.user_id = $2 OR sl.visibility = 'public' OR s.user_id = $2)`,
           [sl_id, user_id]);
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'stockList not found'}};
@@ -299,7 +301,8 @@ export class StockListService {
             LIMIT 1
           ) past ON true
           GROUP BY sl.sl_id, sl.user_id, sl.username, sl.name, sl.visibility, sl.created_at 
-          `, [user_id]);
+          `,
+          [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {
