@@ -61,7 +61,9 @@ export class StockListService {
       }
       const result = await db.query(
           `
-          SELECT * FROM StockList sl WHERE sl.sl_id = $1 AND sl.user_id = $2`,
+          SELECT * FROM StockList sl 
+          LEFT JOIN Share s on s.sl_id = sl.sl_id
+          WHERE sl.sl_id = $1 AND (sl.user_id = $2 OR sl.visibility = 'public' OR s.user_id = $2)`,
           [sl_id, user_id]);
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'stockList not found'}};
@@ -194,10 +196,12 @@ export class StockListService {
           // stock is given equal weight, so we just find AVG performance.
           `
           WITH sl as(
-            SELECT * FROM StockList WHERE visibility = 'public'
+            SELECT StockList.*, Users.username FROM StockList 
+            JOIN Users on StockList.user_id = Users.user_id
+            WHERE visibility = 'public'
           )
           SELECT 
-            sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
+            sl.sl_id, sl.user_id, sl.name, sl.username, sl.visibility, sl.created_at, 
             ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
             ROUND(AVG(
               ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
@@ -225,7 +229,7 @@ export class StockListService {
             ORDER BY timestamp DESC
             LIMIT 1
           ) past ON true
-          GROUP BY sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at 
+          GROUP BY sl.sl_id, sl.user_id, sl.name, sl.username, sl.visibility, sl.created_at 
           `);
       return {data: result.rows};
     } catch (error: any) {
@@ -264,11 +268,13 @@ export class StockListService {
           // stock is given equal weight, so we just find AVG performance.
           `
           WITH sl as(
-            SELECT StockList.* FROM StockList JOIN Share on StockList.sl_id = Share.sl_id 
+            SELECT StockList.*, Users.username FROM StockList 
+            JOIN Share on StockList.sl_id = Share.sl_id 
+            JOIN Users on StockList.user_id = Users.user_id
             WHERE Share.user_id = $1
           )
           SELECT 
-            sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
+            sl.sl_id, sl.user_id, sl.name, sl.username, sl.visibility, sl.created_at, 
             ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
             ROUND(AVG(
               ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
@@ -296,8 +302,9 @@ export class StockListService {
             ORDER BY timestamp DESC
             LIMIT 1
           ) past ON true
-          GROUP BY sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at 
-          `);
+          GROUP BY sl.sl_id, sl.user_id, sl.username, sl.name, sl.visibility, sl.created_at 
+          `,
+          [user_id]);
       return {data: result.rows};
     } catch (error: any) {
       return {
@@ -357,7 +364,7 @@ export class StockListService {
           if (res.rowCount == 0) {
             res_type = 'private';
           } else {
-            res_type = 'public';
+            res_type = 'shared';
           }
           break;
         default:

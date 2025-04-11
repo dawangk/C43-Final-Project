@@ -60,9 +60,12 @@ export const StockListPage = () => {
     <div className="w-full p-8 flex flex-col gap-8">
       <div className="flex justify-between w-full">
         <h1 className="text-xl">My Stock Lists</h1>
+
+        <div className="flex gap-4">
+          <Button size="sm" onClick={() => setOpen(true)} >+ Create</Button>
+        </div>
         
         <Dialog open={open} onOpenChange={setOpen}>
-          <Button size="sm" onClick={() => setOpen(true)} >+ Create</Button>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Stock List</DialogTitle>

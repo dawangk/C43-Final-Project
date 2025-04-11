@@ -23,10 +23,11 @@ import {
 import { Link } from "react-router-dom"
 import { Label } from "@/components/ui/label"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { deleteStockList, updateStockList } from "@/api/stockListApiSlice"
+import { deleteStockList, toggleVisibility, updateStockList } from "@/api/stockListApiSlice"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
  
 export const stockListColumns: ColumnDef<StockList>[] = [
   {
@@ -66,7 +67,9 @@ export const stockListColumns: ColumnDef<StockList>[] = [
       const {toast} = useToast();
       const [open, setOpen] = useState(false)
       const [openRename, setOpenRename] = useState(false)
+      const [openVisibility, setOpenVisibility] = useState(false)
       const [newName, setNewName] = useState("")
+      const [isPublic, setIsPublic] = useState(stockList.visibility === 'public')
       
       const deleteStockListMutation = useMutation({
         mutationFn: deleteStockList,
@@ -78,6 +81,13 @@ export const stockListColumns: ColumnDef<StockList>[] = [
         mutationFn: updateStockList,
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
+        },
+      })
+      const updateVisibilityMutation = useMutation({
+        mutationFn: toggleVisibility,
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['stock-lists'] })
+          queryClient.invalidateQueries({ queryKey: ['public-stock-lists'] })
         },
       })
 
@@ -112,6 +122,19 @@ export const stockListColumns: ColumnDef<StockList>[] = [
           console.error(error);
         }
       }
+
+      
+      const handleChangeVisibility = async () => {
+        try {
+          const data = await updateVisibilityMutation.mutateAsync(stockList.sl_id.toString());
+          console.log("Visibility", data);
+          toast({
+            description: `Visibility changed successfully.`
+          })
+        } catch (error: any) {
+          console.error(error);
+        }
+      }
     
  
       return (
@@ -131,6 +154,9 @@ export const stockListColumns: ColumnDef<StockList>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setOpenRename(true)}>
                 Rename Stock List
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOpenVisibility(true)}>
+                Edit visibility
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -175,6 +201,30 @@ export const stockListColumns: ColumnDef<StockList>[] = [
                 </DialogClose>
                 <DialogClose asChild>
                   <Button size="sm" onClick={handleRename}>
+                    Save
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={openVisibility} onOpenChange={setOpenVisibility}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Stock list visibility</DialogTitle>
+              </DialogHeader>
+              <div>
+                <Label>Set to public:</Label>
+                <Switch checked={isPublic} onCheckedChange={() => setIsPublic(prev => !prev)}/>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button size="sm" onClick={handleChangeVisibility}>
                     Save
                   </Button>
                 </DialogClose>
@@ -307,6 +357,10 @@ export const publicStockListColumns: ColumnDef<StockList>[] = [
     header: "Name",
   },
   {
+    accessorKey: "username",
+    header: "Owner",
+  },
+  {
     accessorKey: "performance_day",
     header: "Performance (1D)",
     cell: ({ row }) => {
@@ -329,9 +383,88 @@ export const publicStockListColumns: ColumnDef<StockList>[] = [
  
       return (
         <div className="flex gap-2 justify-end items-center">
-          <Link to={`/dashboard/stock-lists/public/${stockList.user_id}/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
+          <Link to={`/dashboard/public-list/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
         </div>
       )
     },
   },
 ]
+
+export const sharedStockListColumns: ColumnDef<StockList>[] = [
+  {
+    accessorKey: "sl_id",
+    header: "ID",
+  },
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "username",
+    header: "Shared by",
+  },
+  {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
+    }
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
+    }
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const stockList = row.original
+ 
+      return (
+        <div className="flex gap-2 justify-end items-center">
+          <Link to={`/dashboard/shared/${stockList.sl_id}`}><Button variant="outline" size="sm"> View</Button></Link>
+        </div>
+      )
+    },
+  },
+]
+
+export const getUnownedStockListColumns = (
+  id: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+  toast: ReturnType<typeof useToast>["toast"]
+): ColumnDef<StockOwnedWithData>[] => [
+  {
+    accessorKey: "symbol",
+    header: "Ticker",
+    cell: ({ row }) => {
+      const symbol: string = row.getValue("symbol")
+      return <Link to={`/dashboard/stock/${symbol}`} className="cursor-pointer hover:text-orange-600 underline">{symbol}</Link>
+    }
+  },
+  {
+    accessorKey: "close",
+    header: "Today's price",
+  },
+  {
+    accessorKey: "performance_day",
+    header: "Performance (1D)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_day")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>%{val}</div>
+    }
+  },
+  {
+    accessorKey: "performance_ytd",
+    header: "Performance (YTD)",
+    cell: ({ row }) => {
+      const val: number = row.getValue("performance_ytd")
+      return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
+    }
+  },
+ 
+];

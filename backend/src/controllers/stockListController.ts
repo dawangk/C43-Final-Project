@@ -36,7 +36,7 @@ export const getStockLists =
       try {
         const id = Number(req.params.id);
         const user_id = (req as any).user.user_id;
-        const {type} = req.body;
+        const type = req.query.type;
         let data, error;
         console.log(id);
         if (id) {
@@ -73,10 +73,11 @@ export const getStockListsWithData =
         const id = Number(req.params.id);
         const user_id = (req as any).user.user_id
         let data, error;
-        let {type} = req.body;
+        let type = req.query.type;
         if (!type) {
           type = 'owned';
         }
+        console.log(type, user_id)
         if (id) {
           ({data, error} =
                await stockListService.getStockListByIdWithData(user_id, id));

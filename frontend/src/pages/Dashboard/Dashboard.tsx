@@ -19,6 +19,8 @@ import { ViewPortfolioPage } from "../Portfolios/ViewPortfolioPage";
 import { StockPage } from "../Stocks/StockPage";
 import { FriendsPage } from "../Friends/FriendsPage";
 import { PublicStockListPage } from "../StockLists/PublicStockListPage";
+import { SharedStockListPage } from "../Shared/SharedStockListPage";
+import { ViewSharedStockListPage } from "../Shared/ViewSharedStockListPage";
 
 export const Dashboard = () => {
   const location = useLocation();
@@ -65,13 +67,15 @@ export const Dashboard = () => {
                     <Route path="/home" element={<>Home</>} />
                     <Route path="/stock-lists" element={<StockListPage/>} />
                     <Route path="/stock-lists/:id" element={<ViewStockListPage />} />
+                    <Route path="/shared" element={<SharedStockListPage/>} />
+                    <Route path="/shared/:id" element={<ViewSharedStockListPage />} />
                     <Route path="/portfolios" element={<PortfoliosPage/>} />
                     <Route path="/portfolios/:id" element={<ViewPortfolioPage />} />
                     <Route path="stock/:symbol" element={<StockPage />}/>
                     <Route path="stock/:symbol/:id" element={<StockPage />}/>
                     <Route path="friends" element={<FriendsPage />}/>
                     <Route path="/public-lists" element={<PublicStockListPage />}/>
-                    <Route path="/public-lists/:userId/:id" element={<ViewStockListPage />} />
+                    <Route path="/public-list/:id" element={<ViewSharedStockListPage />}/>
                   </Routes>
                 </div>
               </SidebarInset>
