@@ -67,3 +67,32 @@ export type MatrixCell = {
   covariance: number,
   correlation: number
 }
+
+export type Friendship = {
+  user1_id: number,
+  user1_name?: string,
+  user1_email?: string,
+  user2_id: number,
+  user2_name?: string,
+  user2_email?: string,
+  created_at?: string,
+}
+
+export type FriendRequest = {
+  incoming_id: number,
+  incoming_name?: string,
+  incoming_email?: string,
+  to_id: number,
+  to_name?: string,
+  to_email?: string,
+  status: string,
+  created_at?: string,
+}
+
+export type UserReview  = {
+  user_id: number,
+  reviewer_name?: string,
+  reviewer_email?: string,
+  sl_id: number,
+  content: string,
+}

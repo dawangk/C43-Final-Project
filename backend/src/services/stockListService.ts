@@ -1,7 +1,3 @@
-import bcrypt from 'bcrypt';
-import cookieParser from 'cookie-parser';
-import jwt from 'jsonwebtoken';
-
 import db from '../db/connectDb';
 import {ResponseType} from '../models/response';
 import {getPeriod} from '../utils/getPeriod';
