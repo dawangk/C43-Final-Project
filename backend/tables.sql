@@ -166,7 +166,7 @@ CREATE TABLE stock_predictions_cache (
 );
 
 alter table friendrequest alter column status set default 'pending';
-
+alter table friendrequest add column updated_at timestamp default now();
 
 create table deletedFriends (
 	user1_id INT NOT NULL,
