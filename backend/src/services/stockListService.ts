@@ -89,17 +89,14 @@ export class StockListService {
       }
 
       const {data, error} = await this.getPortfolioId(user_id, sl_id);
+      let port_id = -1;
+      if (!error) port_id = data.port_id;
 
-      if (error) {
-        return {error: {status: 500, message: 'Portfolio not found!'}};
-      }
-
-      const port_id = data.port_id;
       const stocksWithData = await db.query(
           `
           WITH CombinedStockPerformance AS (
             (SELECT * FROM HistoricalStockPerformance) 
-              UNION 
+              UNION ALL
             (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2)
           )
           SELECT 
@@ -517,19 +514,16 @@ export class StockListService {
       let interval: string = getPeriod(period);
 
       const {data, error} = await this.getPortfolioId(user_id, sl_id);
+      let port_id = -1;
+      if (!error) port_id = data.port_id;
 
-      if (error) {
-        return {error: {status: 400, message: 'Portfolio not found!'}};
-      }
-      console.log(data);
-      const port_id = data.port_id;
       // coeff of variance and beta
       const result = await db.query(
           `
       WITH CombinedStockPerformance AS (
         (SELECT * FROM HistoricalStockPerformance) 
-          UNION 
-        (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $4)
+          UNION ALL
+        (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $3)
       ),
       stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
@@ -580,7 +574,7 @@ export class StockListService {
       SELECT * FROM cv_beta;
 
       `,
-          [sl_id, user_id, interval, port_id])
+          [sl_id, interval, port_id])
 
       // Covariance/correlation matrix
       // Note: matix is in long-form: pairwise results per row
@@ -589,8 +583,8 @@ export class StockListService {
           `
       WITH CombinedStockPerformance AS (
             (SELECT * FROM HistoricalStockPerformance) 
-              UNION 
-            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $4)
+              UNION ALL
+            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $3)
       ),
       stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
@@ -634,7 +628,7 @@ export class StockListService {
       ORDER BY stock_a, stock_b;
 
       `,
-          [sl_id, user_id, interval, port_id])
+          [sl_id, interval, port_id])
       return {data: {coeff_and_beta: result.rows, matrix: result_matrix.rows}};
 
     } catch (error: any) {
