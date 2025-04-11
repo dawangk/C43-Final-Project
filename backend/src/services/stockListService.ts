@@ -95,9 +95,19 @@ export class StockListService {
       const stocksWithData = await db.query(
           `
           WITH CombinedStockPerformance AS (
-            (SELECT * FROM HistoricalStockPerformance) 
+            SELECT DISTINCT ON (symbol, timestamp) *
+            FROM (
+              SELECT rsp.symbol, rsp.timestamp, rsp.open, rsp.high, rsp.low, rsp.close, rsp.volume 
+              FROM RecordedStockPerformance rsp
+              JOIN StockOwned so ON rsp.symbol = so.symbol
+              WHERE rsp.port_id = $2 AND so.sl_id = $1
               UNION ALL
-            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2)
+              SELECT hsp.* 
+              FROM HistoricalStockPerformance hsp
+              JOIN StockOwned so ON hsp.symbol = so.symbol
+              WHERE so.sl_id = $1
+            ) combined
+            ORDER BY symbol, timestamp DESC NULLS LAST
           )
           SELECT 
           so.*, 
@@ -520,10 +530,21 @@ export class StockListService {
       // coeff of variance and beta
       const result = await db.query(
           `
+      
       WITH CombinedStockPerformance AS (
-        (SELECT * FROM HistoricalStockPerformance) 
+        SELECT DISTINCT ON (symbol, timestamp) *
+        FROM (
+          SELECT rsp.symbol, rsp.timestamp, rsp.open, rsp.high, rsp.low, rsp.close, rsp.volume 
+          FROM RecordedStockPerformance rsp
+          JOIN StockOwned so ON rsp.symbol = so.symbol
+          WHERE rsp.port_id = $3 AND so.sl_id = $1
           UNION ALL
-        (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $3)
+          SELECT hsp.* 
+          FROM HistoricalStockPerformance hsp
+          JOIN StockOwned so ON hsp.symbol = so.symbol
+          WHERE so.sl_id = $1
+        ) combined
+        ORDER BY symbol, timestamp DESC NULLS LAST
       ),
       stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
@@ -567,7 +588,7 @@ export class StockListService {
         SELECT
           symbol,
           STDDEV(daily_return) / NULLIF(AVG(daily_return), 0) AS coefficient_of_variance,
-          COVAR_POP(daily_return, market_return) / NULLIF(VAR_POP(market_return), 0) AS beta
+          REGR_SLOPE(daily_return, market_return) AS beta
         FROM joined_returns
         GROUP BY symbol
       )
@@ -582,9 +603,19 @@ export class StockListService {
       const result_matrix = await db.query(
           `
       WITH CombinedStockPerformance AS (
-            (SELECT * FROM HistoricalStockPerformance) 
-              UNION ALL
-            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $3)
+        SELECT DISTINCT ON (symbol, timestamp) *
+        FROM (
+          SELECT rsp.symbol, rsp.timestamp, rsp.open, rsp.high, rsp.low, rsp.close, rsp.volume 
+          FROM RecordedStockPerformance rsp
+          JOIN StockOwned so ON rsp.symbol = so.symbol
+          WHERE rsp.port_id = $3 AND so.sl_id = $1
+          UNION ALL
+          SELECT hsp.* 
+          FROM HistoricalStockPerformance hsp
+          JOIN StockOwned so ON hsp.symbol = so.symbol
+          WHERE so.sl_id = $1
+        ) combined
+        ORDER BY symbol, timestamp DESC NULLS LAST
       ),
       stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
