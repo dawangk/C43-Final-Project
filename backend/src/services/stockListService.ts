@@ -196,7 +196,7 @@ export class StockListService {
           // stock is given equal weight, so we just find AVG performance.
           `
           WITH sl as(
-            SELECT * FROM StockList WHERE user_id = $1
+            SELECT * FROM StockList WHERE user_id = $1 AND sl_id NOT IN (SELECT sl_id from Portfolio)
           )
           SELECT 
             sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
