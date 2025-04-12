@@ -199,16 +199,28 @@ export class PortfolioService {
         LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
         LEFT JOIN LATERAL (
           SELECT *
-          FROM HistoricalStockPerformance
+          FROM (
+            (SELECT * FROM HistoricalStockPerformance) 
+              UNION 
+            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = p.port_id)
+          )
           WHERE symbol = so.symbol
           ORDER BY timestamp DESC
           LIMIT 1
         ) latest ON true
         LEFT JOIN LATERAL (
           SELECT *
-          FROM HistoricalStockPerformance
+          FROM (
+            (SELECT * FROM HistoricalStockPerformance) 
+              UNION 
+            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = p.port_id)
+          )
           WHERE symbol = so.symbol
-            AND timestamp <= (SELECT timestamp FROM HistoricalStockPerformance WHERE symbol = so.symbol ORDER BY timestamp DESC LIMIT 1) - INTERVAL '1 year'
+            AND timestamp <= (SELECT timestamp FROM (
+              (SELECT * FROM HistoricalStockPerformance) 
+                UNION 
+              (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = p.port_id)
+            ) WHERE symbol = so.symbol ORDER BY timestamp DESC LIMIT 1) - INTERVAL '1 year'
           ORDER BY timestamp DESC
           LIMIT 1
         ) past ON true
@@ -318,18 +330,29 @@ export class PortfolioService {
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (
             SELECT *
-            FROM HistoricalStockPerformance
+            FROM (
+            (SELECT * FROM HistoricalStockPerformance) 
+            UNION 
+            (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = p.port_id))
             WHERE symbol = so.symbol
             ORDER BY timestamp DESC
             LIMIT 1
           ) latest ON true
           LEFT JOIN LATERAL (
             SELECT *
-            FROM HistoricalStockPerformance
+            FROM (
+              (SELECT * FROM HistoricalStockPerformance) 
+              UNION 
+              (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = p.port_id)
+            )
             WHERE symbol = so.symbol
               AND timestamp <= (
                 SELECT timestamp 
-                FROM HistoricalStockPerformance 
+                FROM (
+                  (SELECT * FROM HistoricalStockPerformance) 
+                  UNION 
+                  (SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = p.port_id)
+                ) 
                 WHERE symbol = so.symbol 
                 ORDER BY timestamp DESC 
                 LIMIT 1

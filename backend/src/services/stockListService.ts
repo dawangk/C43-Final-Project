@@ -53,6 +53,27 @@ export class StockListService {
     }
   }
 
+  async getPortfolioId(user_id: number, sl_id: number): Promise<ResponseType> {
+    try {
+      if (!user_id || !sl_id) {
+        return {error: {status: 400, message: 'Name is required.'}};
+      }
+
+      const result = await db.query(
+          'SELECT port_id FROM Portfolio WHERE user_id = $1 AND sl_id = $2',
+          [user_id, sl_id]);
+      if (result.rowCount == 0) {
+        return {error: {status: 404, message: 'no stockLists found for user'}};
+      }
+      const port_id = result.rows[0].port_id;
+      return {data: {port_id}};
+    } catch (error: any) {
+      return {
+        error: {status: 500, message: error.message || 'internal server error'}
+      };
+    }
+  }
+
   async getStockListByIdWithData(user_id: number, sl_id: number):
       Promise<ResponseType> {
     try {
@@ -68,8 +89,47 @@ export class StockListService {
       if (result.rowCount == 0) {
         return {error: {status: 404, message: 'stockList not found'}};
       }
+
+      const {data, error} = await this.getPortfolioId(user_id, sl_id);
+      let port_id = -1;
+      if (!error) port_id = data.port_id;
+
       const stocksWithData = await db.query(
-          `SELECT 
+          `
+          WITH CombinedStockPerformance AS (
+            SELECT DISTINCT ON (symbol, timestamp) *
+            FROM (
+              SELECT 
+                rsp.symbol, 
+                rsp.timestamp, 
+                rsp.open, 
+                rsp.high, 
+                rsp.low, 
+                rsp.close, 
+                rsp.volume,
+                1 as priority 
+              FROM RecordedStockPerformance rsp
+              JOIN StockOwned so ON rsp.symbol = so.symbol
+              WHERE rsp.port_id = $2 AND so.sl_id = $1
+              
+              UNION ALL
+              
+              SELECT 
+                hsp.symbol, 
+                hsp.timestamp, 
+                hsp.open, 
+                hsp.high, 
+                hsp.low, 
+                hsp.close, 
+                hsp.volume,
+                2 as priority  
+              FROM HistoricalStockPerformance hsp
+              JOIN StockOwned so ON hsp.symbol = so.symbol
+              WHERE so.sl_id = $1
+            ) combined
+            ORDER BY symbol, timestamp DESC NULLS LAST, priority
+          )
+          SELECT 
           so.*, 
           hsp_latest.*, 
           ROUND((((hsp_latest.close - hsp_latest.open) / hsp_latest.open) * 100)::NUMERIC, 2) AS performance_day,
@@ -77,19 +137,19 @@ export class StockListService {
         FROM StockOwned so
         JOIN (
           SELECT DISTINCT ON (symbol) *
-          FROM HistoricalStockPerformance
+          FROM CombinedStockPerformance
           ORDER BY symbol, timestamp DESC
         ) hsp_latest ON so.symbol = hsp_latest.symbol
         LEFT JOIN LATERAL (
           SELECT *
-          FROM HistoricalStockPerformance h
+          FROM CombinedStockPerformance h
           WHERE h.symbol = so.symbol
             AND h.timestamp <= hsp_latest.timestamp - INTERVAL '1 year'
           ORDER BY h.timestamp DESC
           LIMIT 1
         ) hsp_past ON true
         WHERE so.sl_id = $1`,
-          [sl_id]);
+          [sl_id, port_id]);
 
       return {
         data: {
@@ -129,6 +189,8 @@ export class StockListService {
       if (!user_id) {
         return {error: {status: 400, message: 'Missing parameters.'}};
       }
+
+
       const result = await db.query(
           // -- performance of a stock list is calculated for 1d and YTD. Each
           // stock is given equal weight, so we just find AVG performance.
@@ -486,24 +548,62 @@ export class StockListService {
 
       let interval: string = getPeriod(period);
 
+      const {data, error} = await this.getPortfolioId(user_id, sl_id);
+      let port_id = -1;
+      if (!error) port_id = data.port_id;
+
       // coeff of variance and beta
       const result = await db.query(
           `
-      WITH stocks_in_list AS (
+      
+      WITH CombinedStockPerformance AS (
+        SELECT DISTINCT ON (symbol, timestamp) *
+        FROM (
+          SELECT 
+            rsp.symbol, 
+            rsp.timestamp, 
+            rsp.open, 
+            rsp.high, 
+            rsp.low, 
+            rsp.close, 
+            rsp.volume,
+            1 as priority 
+          FROM RecordedStockPerformance rsp
+          JOIN StockOwned so ON rsp.symbol = so.symbol
+          WHERE rsp.port_id = $3 AND so.sl_id = $1
+          
+          UNION ALL
+          
+          SELECT 
+            hsp.symbol, 
+            hsp.timestamp, 
+            hsp.open, 
+            hsp.high, 
+            hsp.low, 
+            hsp.close, 
+            hsp.volume,
+            2 as priority  
+          FROM HistoricalStockPerformance hsp
+          JOIN StockOwned so ON hsp.symbol = so.symbol
+          WHERE so.sl_id = $1
+        ) combined
+        ORDER BY symbol, timestamp DESC NULLS LAST, priority
+      ),
+      stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
         JOIN StockList sl ON so.sl_id = sl.sl_id
         WHERE sl.sl_id = $1
       ),
       latest_date AS (
-        SELECT MAX(timestamp) AS max_date FROM HistoricalStockPerformance
+        SELECT MAX(timestamp) AS max_date FROM CombinedStockPerformance
       ),
       daily_returns AS (
         SELECT 
           symbol,
           timestamp,
           (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
-          LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
-        FROM HistoricalStockPerformance
+          NULLIF(LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp), 0) AS daily_return
+        FROM CombinedStockPerformance
         WHERE symbol IN (SELECT symbol FROM stocks_in_list)
       ),
       filtered_returns AS (
@@ -531,27 +631,60 @@ export class StockListService {
         SELECT
           symbol,
           STDDEV(daily_return) / NULLIF(AVG(daily_return), 0) AS coefficient_of_variance,
-          COVAR_POP(daily_return, market_return) / VAR_POP(market_return) AS beta
+          REGR_SLOPE(daily_return, market_return) AS beta
         FROM joined_returns
         GROUP BY symbol
       )
       SELECT * FROM cv_beta;
 
       `,
-          [sl_id, interval])
+          [sl_id, interval, port_id])
 
       // Covariance/correlation matrix
       // Note: matix is in long-form: pairwise results per row
       // Note 2: Only joins stock pairs with matching timestamps
       const result_matrix = await db.query(
           `
-      WITH stocks_in_list AS (
+      WITH CombinedStockPerformance AS (
+        SELECT DISTINCT ON (symbol, timestamp) *
+        FROM (
+          SELECT 
+            rsp.symbol, 
+            rsp.timestamp, 
+            rsp.open, 
+            rsp.high, 
+            rsp.low, 
+            rsp.close, 
+            rsp.volume,
+            1 as priority 
+          FROM RecordedStockPerformance rsp
+          JOIN StockOwned so ON rsp.symbol = so.symbol
+          WHERE rsp.port_id = $3 AND so.sl_id = $1
+          
+          UNION ALL
+          
+          SELECT 
+            hsp.symbol, 
+            hsp.timestamp, 
+            hsp.open, 
+            hsp.high, 
+            hsp.low, 
+            hsp.close, 
+            hsp.volume,
+            2 as priority  
+          FROM HistoricalStockPerformance hsp
+          JOIN StockOwned so ON hsp.symbol = so.symbol
+          WHERE so.sl_id = $1
+        ) combined
+        ORDER BY symbol, timestamp DESC NULLS LAST, priority
+      ),
+      stocks_in_list AS (
         SELECT symbol FROM StockOwned so 
         JOIN StockList sl ON so.sl_id = sl.sl_id
         WHERE sl.sl_id = $1
       ),
       latest_date AS (
-        SELECT MAX(timestamp) AS max_date FROM HistoricalStockPerformance
+        SELECT MAX(timestamp) AS max_date FROM CombinedStockPerformance
       ),
       daily_returns AS (
         SELECT 
@@ -559,7 +692,7 @@ export class StockListService {
           timestamp,
           (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
           LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
-        FROM HistoricalStockPerformance
+        FROM CombinedStockPerformance
         WHERE symbol IN (SELECT symbol FROM stocks_in_list)
       ),
       filtered_returns AS (
@@ -587,8 +720,7 @@ export class StockListService {
       ORDER BY stock_a, stock_b;
 
       `,
-          [sl_id, interval])
-
+          [sl_id, interval, port_id])
       return {data: {coeff_and_beta: result.rows, matrix: result_matrix.rows}};
 
     } catch (error: any) {

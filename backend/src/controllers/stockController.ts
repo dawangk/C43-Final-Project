@@ -25,7 +25,8 @@ export const getStocks = asyncHandler(async (req: Request, res: Response) => {
 export const getStock = asyncHandler(async (req: Request, res: Response) => {
   try {
     const symbol = req.params.symbol;
-    const {data, error} = await stockService.getStock(symbol);
+    const {port_id} = req.body;
+    const {data, error} = await stockService.getStock(symbol, port_id);
 
     if (error) {
       res.status(error.status).json({message: error.message});
@@ -43,13 +44,14 @@ export const getStockHistory =
       try {
         const symbol = req.params.symbol;
 
-        
+
         const id = req.params.id ? Number(req.params.id) : undefined;
 
-        const { period } = req.query;
-        
-        console.log("Period:", period)
-        const {data, error} = await stockService.getStockHistory(symbol, period as string, id);
+        const {period} = req.query;
+
+        console.log('Period:', period)
+        const {data, error} =
+            await stockService.getStockHistory(symbol, period as string, id);
 
         if (error) {
           res.status(error.status).json({message: error.message});
@@ -62,6 +64,7 @@ export const getStockHistory =
       }
     });
 
+
 export const getStockPrediction =
     asyncHandler(async (req: Request, res: Response) => {
       try {
@@ -69,8 +72,9 @@ export const getStockPrediction =
 
         const id = req.params.id ? Number(req.params.id) : undefined;
 
-        const { period } = req.query;
-        const {data, error} = await stockService.getStockPrediction(symbol, period as string, id);
+        const {period} = req.query;
+        const {data, error} =
+            await stockService.getStockPrediction(symbol, period as string, id);
 
 
         if (error) {
