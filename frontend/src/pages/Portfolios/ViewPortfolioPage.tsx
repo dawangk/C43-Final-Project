@@ -54,8 +54,8 @@ export const ViewPortfolioPage = () => {
   const p_info = getPortfolioQuery.data?.info
 
   const getStockInfoQuery = useQuery({
-    queryKey: ['stock', symbol],
-    queryFn: () => getStock(symbol),
+    queryKey: ['stock', {symbol, port_id: getPortfolioQuery.data?.info.port_id}],
+    queryFn: () => getStock(symbol, Number(getPortfolioQuery.data?.info.port_id)),
     enabled: symbol.length > 0
   })
   const addStockListEntryMutation = useMutation({
@@ -102,13 +102,13 @@ export const ViewPortfolioPage = () => {
 
         await modifyFundsMutation.mutateAsync({
           body: {
-            amount: (-getStockInfoQuery.data?.close * amount).toFixed(2)
+            amount: -getStockInfoQuery.data?.close * amount
           }, 
           id: id
         });
 
         toast({
-          description: `Bought ${amount} shares of ${symbol} for $${(getStockInfoQuery.data?.close * amount).toFixed(2)}.`
+          description: `Bought ${amount} shares of ${symbol} for $${getStockInfoQuery.data?.close * amount}.`
         })
       }
       else {
@@ -184,7 +184,7 @@ export const ViewPortfolioPage = () => {
             Import data
           </Button>
         </div>
-
+ 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent>
             <DialogHeader>
@@ -322,7 +322,7 @@ export const ViewPortfolioPage = () => {
         </div>
         <div>
           <div>Performance (YTD): </div>
-          <span className={`font-bold text-2xl ${(p_info && p_info.performance_year) >= 0 ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info.performance_year) ? "%" + p_info.performance_year  : "%0"}</span>
+          <span className={`font-bold text-2xl ${(p_info && p_info.performance_ytd) >= 0 ? "text-green-500" : "text-red-500"}`}> {(p_info && p_info.performance_ytd) ? "%" + p_info.performance_ytd  : "%0"}</span>
         </div>
        
       </div>

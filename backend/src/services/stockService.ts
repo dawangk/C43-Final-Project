@@ -29,8 +29,9 @@ export class StockService {
           WITH CombinedStockPerformance AS (
             SELECT DISTINCT ON (symbol, timestamp) *
             FROM (
-              SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance WHERE port_id = $2 AND 
-              WHERE symbol = $1
+              SELECT symbol, timestamp, open, high, low, close, volume FROM RecordedStockPerformance 
+              WHERE port_id = $2 AND 
+              symbol = $1
               UNION ALL
               SELECT * FROM HistoricalStockPerformance WHERE symbol = $1
             ) combined

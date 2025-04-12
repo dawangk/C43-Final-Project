@@ -316,8 +316,8 @@ export const getViewPortfolioColumns = (
       const [amount, setAmount] = useState(0);
 
       const getStockInfoQuery = useQuery({
-        queryKey: ['stock', stock.symbol],
-        queryFn: () => getStock(stock.symbol),
+        queryKey: ['stock', {stock: stock.symbol, port_id}],
+        queryFn: () => getStock(stock.symbol, Number(port_id)),
         enabled: stock.symbol.length > 0
       })
 

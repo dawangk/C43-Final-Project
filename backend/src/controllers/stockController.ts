@@ -25,9 +25,9 @@ export const getStocks = asyncHandler(async (req: Request, res: Response) => {
 export const getStock = asyncHandler(async (req: Request, res: Response) => {
   try {
     const symbol = req.params.symbol;
-    const {port_id} = req.body;
+    const port_id = req.query.port_id ? Number(req.query.port_id) : -1;
     const {data, error} = await stockService.getStock(symbol, port_id);
-
+    console.log(port_id);
     if (error) {
       res.status(error.status).json({message: error.message});
       return;
