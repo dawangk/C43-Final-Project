@@ -73,7 +73,7 @@ export class StockListService {
           so.*, 
           hsp_latest.*, 
           ROUND((((hsp_latest.close - hsp_latest.open) / hsp_latest.open) * 100)::NUMERIC, 2) AS performance_day,
-          ROUND((((hsp_latest.close - hsp_past.close) / hsp_past.close) * 100)::NUMERIC, 2) AS performance_ytd
+          ROUND((((hsp_latest.close - hsp_past.close) / hsp_past.close) * 100)::NUMERIC, 2) AS performance_year
         FROM StockOwned so
         JOIN (
           SELECT DISTINCT ON (symbol) *
@@ -150,7 +150,7 @@ export class StockListService {
                 ) * 100
               )::NUMERIC
               / NULLIF(SUM(so.amount), 0)
-            ), 2) AS performance_ytd
+            ), 2) AS performance_year
           FROM sl
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (
@@ -223,7 +223,7 @@ export class StockListService {
                 ) * 100
               )::NUMERIC
               / NULLIF(SUM(so.amount), 0)
-            ), 2) AS performance_ytd
+            ), 2) AS performance_year
           FROM sl
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (
@@ -305,7 +305,7 @@ export class StockListService {
                 ) * 100
               )::NUMERIC
               / NULLIF(SUM(so.amount), 0)
-            ), 2) AS performance_ytd
+            ), 2) AS performance_year
           FROM sl
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (

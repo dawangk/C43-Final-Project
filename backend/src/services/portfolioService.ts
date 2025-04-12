@@ -193,7 +193,7 @@ export class PortfolioService {
                 ) * 100
               )::NUMERIC
               / NULLIF(SUM(so.amount), 0)
-            ), 2) AS performance_ytd
+            ), 2) AS performance_year
         FROM Portfolio p
         JOIN StockList sl ON p.sl_id = sl.sl_id
         LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
@@ -312,7 +312,7 @@ export class PortfolioService {
                 ) * 100
               )::NUMERIC
               / NULLIF(SUM(so.amount), 0)
-            ), 2) AS performance_ytd
+            ), 2) AS performance_year
           FROM Portfolio p
           JOIN StockList sl ON p.sl_id = sl.sl_id
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
