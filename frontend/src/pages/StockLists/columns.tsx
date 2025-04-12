@@ -251,6 +251,10 @@ export const getViewStockListColumns = (
     }
   },
   {
+    accessorKey: "amount",
+    header: "No. Shares",
+  },
+  {
     accessorKey: "close",
     header: "Today's price",
   },
