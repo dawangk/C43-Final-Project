@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Upload, X } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { uploadFile } from '@/api/portfolioApiSlice';
 
 type UploadStatusType = 'uploading' | 'success' | 'error' | null
@@ -32,11 +32,13 @@ export const FileUpload = ({
   const [dragActive, setDragActive] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const uploadMutation = useMutation<UploadResponse, Error, UploadArgs>({
     mutationFn: uploadFile,
     onSuccess: (data) => {
       setUploadStatus('success');
+      queryClient.invalidateQueries();
       // Clear files after successful upload
       setTimeout(() => {
         setFiles([]);
