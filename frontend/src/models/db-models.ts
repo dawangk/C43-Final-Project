@@ -26,7 +26,7 @@ export type StockOwnedWithData = StockOwned & {
   low: number,
   timestamp: string,
   performance_day: number,
-  performance_ytd: number,
+  performance_year: number,
 }
 
 export type StockStats = {
@@ -58,7 +58,7 @@ export type PortfolioResponse = {
 export type PortfolioWithData = Portfolio & {
   market_value: number,
   performance_day: number,
-  performance_ytd: number,
+  performance_year: number,
 }
 
 export type MatrixCell = {

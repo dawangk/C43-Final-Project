@@ -37,6 +37,7 @@ export const ViewStockListPage = () => {
   const [shareOpen, setShareOpen ] = useState(false);
   const [editReviewOpen, setEditReviewOpen] = useState(false)
   const [newContent, setNewContent] = useState<string>(""); 
+  const [amount, setAmount] = useState(0)
 
   const {toast} = useToast();
   const queryClient = useQueryClient()
@@ -132,7 +133,7 @@ export const ViewStockListPage = () => {
       const data = await addStockListEntryMutation.mutateAsync({
         body: {
           symbol: symbol, 
-          amount: 1
+          amount: amount
         }, 
         id: id as string
       });
@@ -226,6 +227,11 @@ export const ViewStockListPage = () => {
                     </div>
 
                   </div>
+                  <div className="mt-4 flex flex-col gap-2">
+                      <span>No. Shares</span>
+                      <Input type="number" value={amount} onChange={(e) => setAmount(Math.round(e.target.valueAsNumber))}></Input>
+                      <div>Total Price: <span className="font-bold">${amount ? (getStockInfoQuery.data?.close * amount).toFixed(2) : 0}</span></div>
+                    </div>
                 </div>
                 
                 <div className="flex gap-4 items-center justify-center">

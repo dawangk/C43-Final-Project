@@ -51,10 +51,10 @@ export const stockListColumns: ColumnDef<StockList>[] = [
     }
   },
   {
-    accessorKey: "performance_ytd",
+    accessorKey: "performance_year",
     header: "Performance (YTD)",
     cell: ({ row }) => {
-      const val: number = row.getValue("performance_ytd")
+      const val: number = row.getValue("performance_year")
       return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
     }
   },
@@ -251,6 +251,10 @@ export const getViewStockListColumns = (
     }
   },
   {
+    accessorKey: "amount",
+    header: "No. Shares",
+  },
+  {
     accessorKey: "close",
     header: "Today's price",
   },
@@ -263,10 +267,10 @@ export const getViewStockListColumns = (
     }
   },
   {
-    accessorKey: "performance_ytd",
-    header: "Performance (YTD)",
+    accessorKey: "performance_year",
+    header: "Performance (1 year)",
     cell: ({ row }) => {
-      const val: number = row.getValue("performance_ytd")
+      const val: number = row.getValue("performance_year")
       return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
     }
   },
@@ -369,10 +373,10 @@ export const publicStockListColumns: ColumnDef<StockList>[] = [
     }
   },
   {
-    accessorKey: "performance_ytd",
-    header: "Performance (YTD)",
+    accessorKey: "performance_year",
+    header: "Performance (1 year)",
     cell: ({ row }) => {
-      const val: number = row.getValue("performance_ytd")
+      const val: number = row.getValue("performance_year")
       return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
     }
   },
@@ -412,10 +416,10 @@ export const sharedStockListColumns: ColumnDef<StockList>[] = [
     }
   },
   {
-    accessorKey: "performance_ytd",
-    header: "Performance (YTD)",
+    accessorKey: "performance_year",
+    header: "Performance (1 year)",
     cell: ({ row }) => {
-      const val: number = row.getValue("performance_ytd")
+      const val: number = row.getValue("performance_year")
       return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "%0"}</div>
     }
   },
@@ -459,10 +463,10 @@ export const getUnownedStockListColumns = (
     }
   },
   {
-    accessorKey: "performance_ytd",
-    header: "Performance (YTD)",
+    accessorKey: "performance_year",
+    header: "Performance (1 year)",
     cell: ({ row }) => {
-      const val: number = row.getValue("performance_ytd")
+      const val: number = row.getValue("performance_year")
       return <div className={`font-medium ${val >= 0 ? "text-green-500" : "text-red-500"}`}>{val ? "%" + val : "No info"}</div>
     }
   },

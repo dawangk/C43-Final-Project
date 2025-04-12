@@ -133,7 +133,7 @@ export class StockListService {
           so.*, 
           hsp_latest.*, 
           ROUND((((hsp_latest.close - hsp_latest.open) / hsp_latest.open) * 100)::NUMERIC, 2) AS performance_day,
-          ROUND((((hsp_latest.close - hsp_past.close) / hsp_past.close) * 100)::NUMERIC, 2) AS performance_ytd
+          ROUND((((hsp_latest.close - hsp_past.close) / hsp_past.close) * 100)::NUMERIC, 2) AS performance_year
         FROM StockOwned so
         JOIN (
           SELECT DISTINCT ON (symbol) *
@@ -200,10 +200,19 @@ export class StockListService {
           )
           SELECT 
             sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
-            ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
-            ROUND(AVG(
-              ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
-            )::NUMERIC, 2) AS performance_ytd
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_year
           FROM sl
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (
@@ -264,10 +273,19 @@ export class StockListService {
           )
           SELECT 
             sl.sl_id, sl.user_id, sl.name, sl.username, sl.visibility, sl.created_at, 
-            ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
-            ROUND(AVG(
-              ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
-            )::NUMERIC, 2) AS performance_ytd
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_year
           FROM sl
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (
@@ -337,10 +355,19 @@ export class StockListService {
           )
           SELECT 
             sl.sl_id, sl.user_id, sl.name, sl.username, sl.visibility, sl.created_at, 
-            ROUND(AVG(((latest.close - latest.open) / latest.open) * 100)::NUMERIC, 2) AS performance_day,
-            ROUND(AVG(
-              ((latest.close - COALESCE(past.close, latest.close)) / NULLIF(COALESCE(past.close, latest.close), 0)) * 100
-            )::NUMERIC, 2) AS performance_ytd
+            ROUND((
+              SUM(so.amount * ((latest.close - latest.open) / latest.open) * 100)::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_day,
+            ROUND((
+              SUM(
+                so.amount * (
+                  (latest.close - COALESCE(past.close, latest.close)) / 
+                  NULLIF(COALESCE(past.close, latest.close), 0)
+                ) * 100
+              )::NUMERIC
+              / NULLIF(SUM(so.amount), 0)
+            ), 2) AS performance_year
           FROM sl
           LEFT JOIN StockOwned so ON sl.sl_id = so.sl_id
           LEFT JOIN LATERAL (
