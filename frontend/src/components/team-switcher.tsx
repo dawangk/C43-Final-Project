@@ -37,7 +37,7 @@ export function TeamSwitcher({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          {/* <DropdownMenuTrigger asChild> */}
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -54,7 +54,7 @@ export function TeamSwitcher({
                 <span className="truncate text-xs">{activeTeam.plan}</span>
               </div>
             </SidebarMenuButton>
-          </DropdownMenuTrigger>
+          {/* </DropdownMenuTrigger> */}
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
             align="start"

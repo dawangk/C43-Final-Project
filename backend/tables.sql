@@ -11,8 +11,9 @@ CREATE TABLE Users (
 CREATE TABLE FriendRequest(
 	incoming_id INT NOT NULL,
 	to_id INT NOT NULL,
-	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')), 
+	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending', 
 	created_at TIMESTAMP DEFAULT NOW(), 
+	updated_at TIMESTAMP DEFAULT NOW(), 
 	FOREIGN KEY(incoming_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 	FOREIGN KEY(to_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 	CONSTRAINT unique_friend_request PRIMARY KEY(incoming_id, to_id)
@@ -34,6 +35,7 @@ CREATE TABLE StockList(
 	visibility VARCHAR(20) NOT NULL CHECK (visibility IN ('private', 'shared', 'public')) DEFAULT 'private',
     created_at TIMESTAMP DEFAULT NOW(), 
 	CONSTRAINT unique_stock_list_name UNIQUE(user_id, name)
+	FOREIGN KEY(user_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 );
 
 CREATE TABLE Portfolio(
@@ -52,30 +54,14 @@ CREATE TABLE StockOwned(
 	sl_id INT NOT NULL, 
 	symbol VARCHAR(5) NOT NULL, 
 	amount INT CHECK (amount > 0), 
-  created_at TIMESTAMP DEFAULT NOW(), 
-  updated_at TIMESTAMP DEFAULT NOW(), 
+	created_at TIMESTAMP DEFAULT NOW(), 
+	updated_at TIMESTAMP DEFAULT NOW(), 
 	PRIMARY KEY (sl_id, symbol),
 	FOREIGN KEY(sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
 
 CREATE TABLE Stock(
   symbol VARCHAR(5) PRIMARY KEY
-);
-
-CREATE TABLE CreatorOfP(
-	user_id INT NOT NULL, 
-	port_id INT NOT NULL, 
-	PRIMARY KEY (user_id, port_id), 
-	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-	FOREIGN KEY (port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE
-);
-
-CREATE TABLE CreatorOfSL(
-	user_id INT NOT NULL, 
-	sl_id INT NOT NULL, 
-	PRIMARY KEY (user_id, sl_id), 
-	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-	FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
 );
 
 CREATE TABLE UserReview(
@@ -92,15 +78,8 @@ CREATE TABLE Share(
     sl_id INT NOT NULL,
     user_id INT NOT NULL, 
     FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-);
-
-
-CREATE TABLE SLOfP(
-    port_id INT NOT NULL, 
-    sl_id INT NOT NULL,
-    FOREIGN KEY (port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE, 
-    FOREIGN KEY (sl_id) REFERENCES StockList(sl_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
+	PRIMARY KEY (sl_id, user_id)
 );
 
 CREATE TABLE RecordedStockPerformance (
@@ -112,7 +91,8 @@ CREATE TABLE RecordedStockPerformance (
     low REAL, 
     close REAL, 
     volume INT, 
-    PRIMARY KEY (port_id, symbol, timestamp)
+    PRIMARY KEY (port_id, symbol, timestamp),
+	FOREIGN KEY(port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE
 );
 
 
@@ -128,29 +108,7 @@ CREATE TABLE HistoricalStockPerformance (
 );
 
 -- Import csv 
-COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM 'C:\Users\kevin\Downloads\SP500History.csv' DELIMITER ',' CSV HEADER;
-
--- Allows us to directly fetch the max timestamp per symbol (without sorting)
-CREATE INDEX idx_symbol_timestamp_desc ON HistoricalStockPerformance(symbol, timestamp DESC);
-
--- Supports year-ago lookups (especially for large spans)
-CREATE INDEX idx_symbol_timestamp ON HistoricalStockPerformance(symbol, timestamp);
-
-CREATE INDEX idx_symbol_recorded_desc ON RecordedStockPerformance(port_id, symbol, timestamp DESC);
-CREATE INDEX idx_symbol_recorded ON RecordedStockPerformance(port_id, symbol, timestamp);
-
-INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;
--- cache costly stock prediction calculations by (symbol, interval)
-CREATE TABLE stock_predictions_cache (
-	id SERIAL PRIMARY KEY,
-	symbol VARCHAR(5) NOT NULL,
-	interval TEXT NOT NULL,
-	created_at DATE DEFAULT CURRENT_TIMESTAMP,
-	prediction JSONB NOT NULL,
-	UNIQUE(symbol, interval)
-);
-
-
+COPY HistoricalStockPerformance(timestamp, open, high, low, close, volume, symbol) FROM 'LOCATION' DELIMITER ',' CSV HEADER;
 
 INSERT INTO stock(symbol) select distinct symbol from HistoricalStockPerformance;
 
@@ -162,20 +120,25 @@ CREATE TABLE stock_predictions_cache (
 	port_id INT DEFAULT NULL,
 	created_at DATE DEFAULT CURRENT_TIMESTAMP,
 	prediction JSONB NOT NULL,
-	UNIQUE(symbol, interval, port_id)
+	UNIQUE(symbol, interval, port_id),
+	FOREIGN KEY(port_id) REFERENCES Portfolio(port_id) ON DELETE CASCADE
 );
-
-alter table friendrequest alter column status set default 'pending';
-
-alter table friendrequest add column updated_at timestamp default now();
 
 create table deletedFriends (
 	user1_id INT NOT NULL,
 	user2_id INT NOT NULL,
 	created_at TIMESTAMP DEFAULT NOW(), 
+	PRIMARY KEY(user1_id, user2_id),
 	FOREIGN KEY(user1_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 	FOREIGN KEY(user2_id) REFERENCES Users(user_id) ON DELETE CASCADE, 
 	CHECK (user1_id < user2_id)
 );
 
-alter table share add primary key (sl_id, user_id);
+-- Allows us to directly fetch the max timestamp per symbol (without sorting)
+CREATE INDEX idx_symbol_timestamp_desc ON HistoricalStockPerformance(symbol, timestamp DESC);
+
+-- Supports year-ago lookups (especially for large spans)
+CREATE INDEX idx_symbol_timestamp ON HistoricalStockPerformance(symbol, timestamp);
+
+CREATE INDEX idx_symbol_recorded_desc ON RecordedStockPerformance(port_id, symbol, timestamp DESC);
+CREATE INDEX idx_symbol_recorded ON RecordedStockPerformance(port_id, symbol, timestamp);

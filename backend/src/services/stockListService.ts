@@ -196,7 +196,7 @@ export class StockListService {
           // stock is given equal weight, so we just find AVG performance.
           `
           WITH sl as(
-            SELECT * FROM StockList WHERE user_id = $1
+            SELECT * FROM StockList WHERE user_id = $1 AND sl_id NOT IN (SELECT sl_id from Portfolio)
           )
           SELECT 
             sl.sl_id, sl.user_id, sl.name, sl.visibility, sl.created_at, 
@@ -705,11 +705,6 @@ export class StockListService {
         ) combined
         ORDER BY symbol, timestamp DESC NULLS LAST, priority
       ),
-      stocks_in_list AS (
-        SELECT symbol FROM StockOwned so 
-        JOIN StockList sl ON so.sl_id = sl.sl_id
-        WHERE sl.sl_id = $1
-      ),
       latest_date AS (
         SELECT MAX(timestamp) AS max_date FROM CombinedStockPerformance
       ),
@@ -720,7 +715,6 @@ export class StockListService {
           (close - LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp)) / 
           LAG(close) OVER (PARTITION BY symbol ORDER BY timestamp) AS daily_return
         FROM CombinedStockPerformance
-        WHERE symbol IN (SELECT symbol FROM stocks_in_list)
       ),
       filtered_returns AS (
         SELECT dr.*
