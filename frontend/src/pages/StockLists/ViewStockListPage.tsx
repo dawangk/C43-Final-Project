@@ -145,9 +145,9 @@ export const ViewStockListPage = () => {
     }
   }
 
-  const handleDeleteReview = async () => {
+  const handleDeleteReview = async (reviewer_id: string) => {
     try {
-      const data = await deleteReviewMutation.mutateAsync(id as string);
+      const data = await deleteReviewMutation.mutateAsync({reviewer_id, sl_id: id as string});
       console.log("Delete review", data);
       toast({
         description: `Deleted reivew.`
@@ -349,7 +349,7 @@ export const ViewStockListPage = () => {
                     <div>{review?.reviewer_name} ({review?.reviewer_email}) said:</div>
                   </div>
                   <div className="flex gap-4">
-                  <Button size="sm" variant="secondary" onClick={handleDeleteReview}>Delete Review</Button>
+                  <Button size="sm" variant="secondary" onClick={() => handleDeleteReview(review?.user_id.toString())}>Delete Review</Button>
                   {(review.user_id === me?.user_id) && 
                     <Button size="sm" variant="secondary" onClick={() => setEditReviewOpen(true)}>Edit Review</Button>
                   }
