@@ -356,7 +356,7 @@ export const ViewStockListPage = () => {
                   </div>
                 </div>
 
-                <div className="border rounded-lg w-full text-sm p-2">
+                <div className="border rounded-lg w-full text-sm p-2 text-wrap">
                   {review?.content}
                 </div>
               </div>  
