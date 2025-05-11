@@ -57,7 +57,7 @@ export class UserService {
         const token = jwt.sign(
             {userId: user.user_id}, process.env.JWT_SECRET as string,
             {expiresIn: '1h'});
-        return {data: {message: 'User logged in sucessfully.', token}};
+        return {data: {message: 'User logged in sucessfully.', token, user}};
       } else {
         return {error: {status: 401, message: 'Invalid email or password'}};
       }

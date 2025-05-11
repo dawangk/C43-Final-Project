@@ -58,15 +58,12 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   try {
-     // Get the token from the request (either from Authorization header or
+    // Get the token from the request (either from Authorization header or
     // cookies)
-    const token =
-        req.cookies.token || req.headers.authorization?.split(' ')[1];
+    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      res.status(401).json({
-        message: 'Unauthorized. No token provided.'
-      });
+      res.status(401).json({message: 'Unauthorized. No token provided.'});
       return;
     }
 

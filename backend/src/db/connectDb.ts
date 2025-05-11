@@ -1,5 +1,4 @@
-import { Pool, PoolClient } from "pg";
-import { GoogleAuth } from "google-auth-library"; 
+import {Pool, PoolClient} from 'pg';
 
 class PostgresConnection {
   config: any;
@@ -7,40 +6,23 @@ class PostgresConnection {
 
   constructor(config = {}) {
     this.config = {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT || 5432,
+      host: process.env.DB_HOST || 'localhost',
+      port: Number(process.env.DB_PORT) || 5432,
       database: process.env.DB_NAME,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 10, // maximum number of clients in the pool
-      idleTimeoutMillis: 30000, // how long a client is allowed to remain idle
-      connectionTimeoutMillis: 15000, // maximum time to wait for a connection
+      ssl: false,  // local doesn't require SSL
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 15000,
       ...config
     };
-    
+
     this.pool = new Pool(this.config);
   }
 
   async connect() {
     try {
-      // For GCP Cloud SQL, use specific connection method
-      if (process.env.NODE_ENV === 'production' && process.env.CLOUD_SQL_INSTANCE_CONNECTION_NAME) {
-        const auth = new GoogleAuth({
-          scopes: ['https://www.googleapis.com/auth/cloud-platform']
-        });
-
-        const client = await auth.getClient();
-        const projectId = await auth.getProjectId();
-
-        this.config = {
-          ...this.config,
-          host: `/cloudsql/${process.env.CLOUD_SQL_INSTANCE_CONNECTION_NAME}`,
-          socketPath: `/cloudsql/${process.env.CLOUD_SQL_INSTANCE_CONNECTION_NAME}`
-        };
-      }
-
-      // Error handling for pool
       this.pool.on('error', (err: any) => {
         console.error('Unexpected database error', err);
         process.exit(-1);
@@ -53,7 +35,9 @@ class PostgresConnection {
     }
   }
 
-  async query(  text: string, params?: Array<string | number | boolean | null | Date>, options?: {timeout?: number}) {
+  async query(
+      text: string, params?: Array<string|number|boolean|null|Date>,
+      options?: {timeout?: number}) {
     if (!this.pool) {
       await this.connect();
     }
@@ -61,28 +45,22 @@ class PostgresConnection {
     const queryOptions = {
       text,
       values: params,
-      timeout: options?.timeout || 15000 // 15 seconds default query timeout
+      timeout: options?.timeout || 15000
     };
 
     try {
       const start = Date.now();
       const res = await this.pool.query(queryOptions);
       const duration = Date.now() - start;
-      
-      console.log('Executed query', { 
-        text, 
-        params, 
-        duration, 
-        rows: res.rowCount 
-      });
+
+      console.log(
+          'Executed query', {text, params, duration, rows: res.rowCount});
 
       return res;
     } catch (error: any) {
-      console.error('Query execution error:', {
-        query: text,
-        params,
-        error: error.message
-      });
+      console.error(
+          'Query execution error:',
+          {query: text, params, error: error.message});
       throw error;
     }
   }
@@ -100,14 +78,13 @@ class PostgresConnection {
     }
   }
 
-  async transaction(callback: (client: PoolClient) => Promise<any>): Promise<any> {
+  async transaction(callback: (client: PoolClient) => Promise<any>):
+      Promise<any> {
     const client = await this.getClient();
 
     try {
       await client.query('BEGIN');
-      
       const result = await callback(client);
-      
       await client.query('COMMIT');
       return result;
     } catch (error) {
@@ -130,7 +107,6 @@ class PostgresConnection {
     }
   }
 
-  // Utility method for health check
   async ping() {
     try {
       const result = await this.query('SELECT NOW()');
@@ -147,7 +123,7 @@ const db = new PostgresConnection();
 async function connectDb() {
   try {
     await db.connect();
-    console.log("Connected to Postgres!");
+    console.log('Connected to local Postgres!');
   } catch (error) {
     console.error('Database connection error:', error);
   }

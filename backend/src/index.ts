@@ -6,27 +6,51 @@ import {Server} from 'http';
 
 import db from './db/connectDb';
 import asyncHandler from './middleware/asyncHandler';
+import {friendRouter} from './routes/friendRoutes';
+import {portfolioRouter} from './routes/portfolioRoutes';
+import {reviewRouter} from './routes/reviewRoutes';
+import {shareRouter} from './routes/shareRoutes';
 import {stockListRouter} from './routes/stockListRoutes';
+import {stockRouter} from './routes/stockRoutes';
 import {authRouter} from './routes/userRoutes';
 
 const app: Express = express();
+const HOST = 'localhost';
 const HOST = 'localhost';
 const PORT = process.env.PORT || 8081;
 let server: Server;
 
 app.use(cors({origin: process.env.CLIENT_APP_URL, credentials: true}));
+app.use(cors({origin: process.env.CLIENT_APP_URL, credentials: true}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({extended: true}));
 
+app.use('/api/stock', stockRouter);
 app.use('/api/stocklist', stockListRouter);
+app.use('/api/portfolio', portfolioRouter);
+app.use('/api/review', reviewRouter);
 app.use('/auth', authRouter);
+app.use('/friend', friendRouter);
+app.use('/share', shareRouter);
 
 /**
  * Root route to test the backend server.
  * @route GET /
  */
 app.get(
+    '/',
+    asyncHandler(async (_, res) => {
+      try {
+        const result = await db.query('SELECT * FROM testtbl');
+        // const client = await db.getClient();
+        res.json(result.rows);
+        // res.json(client)
+      } catch (error) {
+        console.error('Query error:', error);
+        res.status(500).json({error: 'Failed to fetch test data'});
+      }
+    }),
     '/',
     asyncHandler(async (_, res) => {
       try {
