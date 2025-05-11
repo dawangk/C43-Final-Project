@@ -81,7 +81,8 @@ export const getStockListsWithData =
         if (id) {
           ({data, error} =
                await stockListService.getStockListByIdWithData(user_id, id));
-        } else {
+        }
+        else {
           switch (type) {
             case 'shared':
               ({data, error} =

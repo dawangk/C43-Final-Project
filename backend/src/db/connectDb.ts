@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from "pg";
+import {Pool, PoolClient} from 'pg';
 
 class PostgresConnection {
   config: any;
@@ -11,7 +11,7 @@ class PostgresConnection {
       database: process.env.DB_NAME,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      ssl: false, // local doesn't require SSL
+      ssl: false,  // local doesn't require SSL
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 15000,
@@ -36,10 +36,8 @@ class PostgresConnection {
   }
 
   async query(
-    text: string,
-    params?: Array<string | number | boolean | null | Date>,
-    options?: { timeout?: number }
-  ) {
+      text: string, params?: Array<string|number|boolean|null|Date>,
+      options?: {timeout?: number}) {
     if (!this.pool) {
       await this.connect();
     }
@@ -55,20 +53,14 @@ class PostgresConnection {
       const res = await this.pool.query(queryOptions);
       const duration = Date.now() - start;
 
-      console.log('Executed query', {
-        text,
-        params,
-        duration,
-        rows: res.rowCount
-      });
+      console.log(
+          'Executed query', {text, params, duration, rows: res.rowCount});
 
       return res;
     } catch (error: any) {
-      console.error('Query execution error:', {
-        query: text,
-        params,
-        error: error.message
-      });
+      console.error(
+          'Query execution error:',
+          {query: text, params, error: error.message});
       throw error;
     }
   }
@@ -86,7 +78,8 @@ class PostgresConnection {
     }
   }
 
-  async transaction(callback: (client: PoolClient) => Promise<any>): Promise<any> {
+  async transaction(callback: (client: PoolClient) => Promise<any>):
+      Promise<any> {
     const client = await this.getClient();
 
     try {
@@ -130,7 +123,7 @@ const db = new PostgresConnection();
 async function connectDb() {
   try {
     await db.connect();
-    console.log("Connected to local Postgres!");
+    console.log('Connected to local Postgres!');
   } catch (error) {
     console.error('Database connection error:', error);
   }
